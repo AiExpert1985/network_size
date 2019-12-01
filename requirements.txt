@@ -1,0 +1,4 @@
+openpyxl==3.0.1
+pandas==0.25.3
+PyInstaller==3.5
+xlrd==1.2.0
