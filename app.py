@@ -1,11 +1,11 @@
 ###### this is the styling version
 
 import pandas
-from pandas import ExcelWriter
 import tkinter
 from tkinter import Button
 from tkinter import filedialog
 from tkinter import Label
+import xlsxwriter
 
 # CONSTANTS
 # titles dictionaries: Columns names for feeder, and transformer sheets, program will look for these titles in the uploaded feeder and transformer excel sheets
@@ -185,27 +185,40 @@ def import_transformers():
     
 def export_ministery_report():
     if f_flag and t_flag:
-        exportExcel(ministeryReportDic())
+        exportExcel()
         userMessage.configure(text=f"تم تصدير تقرير الوزارة {CHECK_MARK}", fg="green")
     else:
         userMessage.configure(text="تأكد من تحميل الملفات بصورة صحيحة قبل محاولة تصديرها", fg="red")
         
 def export_transformers_text():
     if f_flag and t_flag:
-        exportExcel(transTextDic())
+        exportExcel()
         userMessage.configure(text=f"تم تصدير تقرير عدد المحولات {CHECK_MARK}", fg="green")
     else:
         userMessage.configure(text="تأكد من تحميل الملفات بصورة صحيحة قبل محاولة تصديرها", fg="red")
 
-def exportExcel(dataDic):
+def exportExcel():
     try:
-        outFrame = pandas.DataFrame(dataDic)
         filename = filedialog.asksaveasfilename(filetypes=(("Excel files", "*.xlsx"),("All files", "*.*") ))
         if filename is None: # asksaveasfile return `None` if dialog closed with "cancel".
             return
-        writer = ExcelWriter(filename + ".xlsx")
-        outFrame.to_excel(writer,'Sheet1',index=False)
-        writer.save()
+        workbook = xlsxwriter.Workbook(filename + ".xlsx")
+        worksheet = workbook.add_worksheet()
+        start_row = 4
+        end_row = 4
+        for name, station in Station11K.stationsDic.items():
+            feedersList = station.feedersList
+            # sorting feeders inside a station according to their numbers
+            feedersList.sort(key=lambda x: x.number, reverse=False)
+            for feeder in feedersList:
+                worksheet.write(end_row, 1, feeder.name)
+                end_row += 1
+            worksheet.merge_range(start_row,0,end_row-1,0, name)
+            start_row = end_row
+        trans_col_format = workbook.add_format({'align': 'center', 'valign':'vcenter', 'border':True})
+        worksheet.set_column(1,1,20)
+        worksheet.set_column(0,0,20, trans_col_format)
+        workbook.close()
     except:
         userMessage.configure(text="حدث خطأ اثناء تصدير الملف", fg="red")
 
@@ -259,7 +272,6 @@ def transTextDic():
         id_630 = feeder.trans['indoor']['630'] + feeder.trans['kiosk']['630']
         id_1000 = feeder.trans['indoor']['1000'] + feeder.trans['kiosk']['1000']
         id_other = feeder.trans['indoor']['other'] + feeder.trans['kiosk']['other']
-        id_total = id_100 + id_250 + id_400 + id_630 + id_1000 + id_other
         idStrig = f"100x{id_100}+250x{id_250}+400x{id_400}+630x{id_630}+1000x{id_1000}+اخرىx{id_other}"
         transformer.append(idStrig)            
         od_100 = feeder.trans['outdoor']['100']
