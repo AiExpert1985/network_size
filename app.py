@@ -133,9 +133,9 @@ def import_feeders():
                         station = Station11K(stationName)
                     station.addFeeder(feeder)
                 if row[FEEDER_TYPE] == "overhead":
-                    feeder.overLength = row[FEEDER_LENGTH]
+                    feeder.overLength = round(row[FEEDER_LENGTH],2) # keep only two digits after the dot
                 elif row[FEEDER_TYPE] == "cable":
-                    feeder.cableLength = row[FEEDER_LENGTH]
+                    feeder.cableLength = round(row[FEEDER_LENGTH],2) # keep only two digits after the dot
                 else:
                     print(f"Feeder {row[FEEDER_FEEDER]} has ({row[FEEDER_TYPE]}) type field")
         userMessage.configure(text=f"تمت معالجة ملف المغذيات {CHECK_MARK}", fg="green")
@@ -204,20 +204,39 @@ def exportExcel():
             return
         workbook = xlsxwriter.Workbook(filename + ".xlsx")
         worksheet = workbook.add_worksheet()
+        worksheet.right_to_left()
         start_row = 4
         end_row = 4
+        # formats of cell // here we format per cell, not per column
+        feeder_cell_format = workbook.add_format({'valign':'vcenter', 'border':True})
+        cell_format = workbook.add_format({'align': 'center', 'valign':'vcenter', 'border':True})
+        # titles of the columns
+        worksheet.merge_range("A3:A4", "أسم المحطة", cell_format)
+        worksheet.merge_range("B3:B4", "أسم المغذي", cell_format)
+        worksheet.merge_range("C3:C4","طول ألارضي", cell_format)
+        worksheet.merge_range("D3:D4","طول الهوائي", cell_format)
+        worksheet.merge_range("E3:E4","الطول الكلي", cell_format)
+        worksheet.merge_range("G3:L3","صندوقية", cell_format)
+        worksheet.merge_range("M3:R3","غرف", cell_format)
+        worksheet.merge_range("S3:X3","هوائية", cell_format)
+        # add titles to transformers sizes
+        size_col_index = 7
+        for i in range(3):
+            for title in ["100","250","400","630","1000", "اخرى"]:
+                worksheet.write(4, size_col_index, title, cell_format)
+        # intersts data as rows
         for name, station in Station11K.stationsDic.items():
             feedersList = station.feedersList
             # sorting feeders inside a station according to their numbers
             feedersList.sort(key=lambda x: x.number, reverse=False)
             for feeder in feedersList:
-                worksheet.write(end_row, 1, feeder.name)
+                worksheet.write(end_row, 1, feeder.name, feeder_cell_format)
+                worksheet.write(end_row, 2, feeder.cableLength, cell_format)
                 end_row += 1
-            worksheet.merge_range(start_row,0,end_row-1,0, name)
+            worksheet.merge_range(start_row,0,end_row-1,0, name, cell_format)
             start_row = end_row
-        trans_col_format = workbook.add_format({'align': 'center', 'valign':'vcenter', 'border':True})
-        worksheet.set_column(1,1,20)
-        worksheet.set_column(0,0,20, trans_col_format)
+        worksheet.set_column(0,1,20)
+        worksheet.set_column(2,5,15)
         workbook.close()
     except:
         userMessage.configure(text="حدث خطأ اثناء تصدير الملف", fg="red")
