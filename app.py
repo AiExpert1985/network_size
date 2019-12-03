@@ -37,8 +37,9 @@ t_flag = False # will be true if the the transformers file uploaded and processe
 
 class Station11K:
     stationsDic = {}
-    def __init__(self, name):
+    def __init__(self, name, citySide):
         self.name = name
+        self.citySide = citySide
         self.feedersList = []
         Station11K.stationsDic[name] = self
     def addFeeder(self, feeder):
@@ -126,11 +127,12 @@ def import_feeders():
                 if feeder is None:
                     feeder = Feeder(feederName)
                     feeder.number = row[FEEDER_NUMBER]
-                    feeder.citySide = row[FEEDER_CITYSIDE]
+                    citySide = row[FEEDER_CITYSIDE]
+                    feeder.citySide = citySide
                     stationName = row[FEEDER_STATION]
                     station = Station11K.stationsDic.get(stationName, None)
                     if station is None:
-                        station = Station11K(stationName)
+                        station = Station11K(stationName, citySide)
                     station.addFeeder(feeder)
                 if row[FEEDER_TYPE] == "overhead":
                     feeder.overLength = round(row[FEEDER_LENGTH],2) # keep only two digits after the dot
@@ -215,6 +217,7 @@ def exportExcel():
         worksheet.merge_range("A1:Y1", "GIS logo", cell_format)
         worksheet.set_row(0,100)
         worksheet.merge_range("A2:Y2", "مديرية توزيع كهرباء مركز نينوى", cell_format)
+        worksheet.set_row(1,25)
         worksheet.merge_range("A3:A4", "اسم المحطة", title_cell_format)
         worksheet.merge_range("B3:B4", "جانب المدينة", title_cell_format)
         worksheet.merge_range("C3:C4","اسم المغذي", title_cell_format)
@@ -226,11 +229,11 @@ def exportExcel():
         worksheet.merge_range("M3:R3","غرف", title_cell_format)
         worksheet.merge_range("S3:X3","هوائية", title_cell_format)
         # add titles to transformers sizes
-        col_index = 6
+        titleColumnIndex = 6
         for i in range(3):
             for title in [100, 250, 400, 630, 1000, "اخرى"]:
-                worksheet.write(3, col_index, title, title_cell_format)
-                col_index += 1
+                worksheet.write(3, titleColumnIndex, title, title_cell_format)
+                titleColumnIndex += 1
         worksheet.merge_range("Y3:Y4","مجموع المحولات", title_cell_format)
         # intersts data as rows
         for name, station in Station11K.stationsDic.items():
@@ -238,14 +241,27 @@ def exportExcel():
             # sorting feeders inside a station according to their numbers
             feedersList.sort(key=lambda x: x.number, reverse=False)
             for feeder in feedersList:
-                worksheet.write(end_row, 1, feeder.name, feeder_cell_format)
-                worksheet.write(end_row, 2, feeder.cableLength, cell_format)
+                worksheet.write(end_row, 2, feeder.name, feeder_cell_format)
+                worksheet.write(end_row, 3, feeder.cableLength, cell_format)
+                worksheet.write(end_row, 4, feeder.overLength, cell_format)
+                worksheet.write(end_row, 5, feeder.totalLength(), cell_format)
+                transColumnIndex = 6
+                for shape in ['kiosk', 'indoor', 'outdoor']:
+                    for size in ['100', '250', '400', '630', '1000', 'other']:
+                        transSum = feeder.trans[shape][size]
+                        worksheet.write(end_row, transColumnIndex, transSum, cell_format)
+                        transColumnIndex += 1
                 end_row += 1
             worksheet.merge_range(start_row,0,end_row-1,0, name, cell_format)
+            worksheet.merge_range(start_row,1,end_row-1,1, station.citySide, cell_format)
+            worksheet.merge_range(end_row,0,end_row,24, "xxx", title_cell_format)
+            end_row += 1
             start_row = end_row
-        worksheet.set_column(0,1,20)
-        worksheet.set_column(2,5,15)
-        worksheet.set_column(24,24,15)
+        worksheet.set_column("A:A",18)
+        worksheet.set_column("B:B",12)        
+        worksheet.set_column("C:C",20)
+        worksheet.set_column("D:F",12)
+        worksheet.set_column("Y:Y",15)
         workbook.close()
     except:
         userMessage.configure(text="حدث خطأ اثناء تصدير الملف", fg="red")
