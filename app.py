@@ -209,21 +209,29 @@ def exportExcel():
         end_row = 4
         # formats of cell // here we format per cell, not per column
         feeder_cell_format = workbook.add_format({'valign':'vcenter', 'border':True})
+        title_cell_format = workbook.add_format({'align': 'center', 'valign':'vcenter', 'border':True, 'pattern':1, 'bg_color':'#d3d3d3'})
         cell_format = workbook.add_format({'align': 'center', 'valign':'vcenter', 'border':True})
         # titles of the columns
-        worksheet.merge_range("A3:A4", "أسم المحطة", cell_format)
-        worksheet.merge_range("B3:B4", "أسم المغذي", cell_format)
-        worksheet.merge_range("C3:C4","طول ألارضي", cell_format)
-        worksheet.merge_range("D3:D4","طول الهوائي", cell_format)
-        worksheet.merge_range("E3:E4","الطول الكلي", cell_format)
-        worksheet.merge_range("G3:L3","صندوقية", cell_format)
-        worksheet.merge_range("M3:R3","غرف", cell_format)
-        worksheet.merge_range("S3:X3","هوائية", cell_format)
+        worksheet.merge_range("A1:Y1", "GIS logo", cell_format)
+        worksheet.set_row(0,100)
+        worksheet.merge_range("A2:Y2", "مديرية توزيع كهرباء مركز نينوى", cell_format)
+        worksheet.merge_range("A3:A4", "اسم المحطة", title_cell_format)
+        worksheet.merge_range("B3:B4", "جانب المدينة", title_cell_format)
+        worksheet.merge_range("C3:C4","اسم المغذي", title_cell_format)
+        worksheet.merge_range("D3:F3","اطوال المغذيات (متر)", title_cell_format)
+        worksheet.write("D4", "ارضي", title_cell_format)
+        worksheet.write("E4", "هوائي", title_cell_format)
+        worksheet.write("F4", "الكلي", title_cell_format)
+        worksheet.merge_range("G3:L3","صندوقية", title_cell_format)
+        worksheet.merge_range("M3:R3","غرف", title_cell_format)
+        worksheet.merge_range("S3:X3","هوائية", title_cell_format)
         # add titles to transformers sizes
-        size_col_index = 7
+        col_index = 6
         for i in range(3):
-            for title in ["100","250","400","630","1000", "اخرى"]:
-                worksheet.write(4, size_col_index, title, cell_format)
+            for title in [100, 250, 400, 630, 1000, "اخرى"]:
+                worksheet.write(3, col_index, title, title_cell_format)
+                col_index += 1
+        worksheet.merge_range("Y3:Y4","مجموع المحولات", title_cell_format)
         # intersts data as rows
         for name, station in Station11K.stationsDic.items():
             feedersList = station.feedersList
@@ -237,6 +245,7 @@ def exportExcel():
             start_row = end_row
         worksheet.set_column(0,1,20)
         worksheet.set_column(2,5,15)
+        worksheet.set_column(24,24,15)
         workbook.close()
     except:
         userMessage.configure(text="حدث خطأ اثناء تصدير الملف", fg="red")
