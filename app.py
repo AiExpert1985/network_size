@@ -214,8 +214,9 @@ def exportExcel():
         title_cell_format = workbook.add_format({'align': 'center', 'valign':'vcenter', 'border':True, 'pattern':1, 'bg_color':'#d3d3d3'})
         cell_format = workbook.add_format({'align': 'center', 'valign':'vcenter', 'border':True})
         # titles of the columns
+        worksheet.insert_image('A1', 'logo.png', {'x_scale': 1.451, 'y_scale': 1.451})
         worksheet.merge_range("A1:Y1", "GIS logo", cell_format)
-        worksheet.set_row(0,100)
+        worksheet.set_row(0,210)
         worksheet.merge_range("A2:Y2", "مديرية توزيع كهرباء مركز نينوى", cell_format)
         worksheet.set_row(1,25)
         worksheet.merge_range("A3:A4", "اسم المحطة", title_cell_format)
@@ -225,9 +226,9 @@ def exportExcel():
         worksheet.write("D4", "ارضي", title_cell_format)
         worksheet.write("E4", "هوائي", title_cell_format)
         worksheet.write("F4", "الكلي", title_cell_format)
-        worksheet.merge_range("G3:L3","صندوقية", title_cell_format)
-        worksheet.merge_range("M3:R3","غرف", title_cell_format)
-        worksheet.merge_range("S3:X3","هوائية", title_cell_format)
+        worksheet.merge_range("G3:L3","محولات صندوقية", title_cell_format)
+        worksheet.merge_range("M3:R3","غرف محولات", title_cell_format)
+        worksheet.merge_range("S3:X3","محولات هوائية", title_cell_format)
         # add titles to transformers sizes
         titleColumnIndex = 6
         for i in range(3):
@@ -246,15 +247,18 @@ def exportExcel():
                 worksheet.write(end_row, 4, feeder.overLength, cell_format)
                 worksheet.write(end_row, 5, feeder.totalLength(), cell_format)
                 transColumnIndex = 6
+                transTotal = 0
                 for shape in ['kiosk', 'indoor', 'outdoor']:
                     for size in ['100', '250', '400', '630', '1000', 'other']:
                         transSum = feeder.trans[shape][size]
+                        transTotal += transSum
                         worksheet.write(end_row, transColumnIndex, transSum, cell_format)
                         transColumnIndex += 1
+                worksheet.write(end_row, 24, transTotal, cell_format)
                 end_row += 1
             worksheet.merge_range(start_row,0,end_row-1,0, name, cell_format)
             worksheet.merge_range(start_row,1,end_row-1,1, station.citySide, cell_format)
-            worksheet.merge_range(end_row,0,end_row,24, "xxx", title_cell_format)
+            worksheet.merge_range(end_row,0,end_row,24, "", title_cell_format)
             end_row += 1
             start_row = end_row
         worksheet.set_column("A:A",18)
@@ -265,45 +269,6 @@ def exportExcel():
         workbook.close()
     except:
         userMessage.configure(text="حدث خطأ اثناء تصدير الملف", fg="red")
-
-def ministeryReportDic():
-    feeders, stations, overLengths, cableLengths, totalLengths, citySides  = [],[],[],[],[],[]
-    kio_100, kio_250, kio_400, kio_630, kio_1000, kio_other = [],[],[],[],[],[]
-    id_100, id_250, id_400, id_630, id_1000, id_other = [],[],[],[],[],[]
-    od_100, od_250, od_400, od_630, od_1000, od_other = [],[],[],[],[],[]
-    for name, station in Station11K.stationsDic.items():
-        feedersList = station.feedersList
-        # sorting feeders inside a station according to their numbers
-        feedersList.sort(key=lambda x: x.number, reverse=False)
-        for feeder in feedersList:
-            stations.append(station.name)
-            feeders.append(feeder.name)
-            overLengths.append(feeder.overLength)
-            cableLengths.append(feeder.cableLength)
-            totalLengths.append(feeder.totalLength())
-            citySides.append(feeder.citySide)
-            kio_100.append(feeder.trans['kiosk']['100'])
-            kio_250.append(feeder.trans['kiosk']['250'])
-            kio_400.append(feeder.trans['kiosk']['400'])
-            kio_630.append(feeder.trans['kiosk']['630'])
-            kio_1000.append(feeder.trans['kiosk']['1000'])
-            kio_other.append(feeder.trans['kiosk']['other'])
-            id_100.append(feeder.trans['indoor']['100'])
-            id_250.append(feeder.trans['indoor']['250'])
-            id_400.append(feeder.trans['indoor']['400'])
-            id_630.append(feeder.trans['indoor']['630'])
-            id_1000.append(feeder.trans['indoor']['1000'])
-            id_other.append(feeder.trans['indoor']['other'])
-            od_100.append(feeder.trans['outdoor']['100'])
-            od_250.append(feeder.trans['outdoor']['250'])
-            od_400.append(feeder.trans['outdoor']['400'])
-            od_630.append(feeder.trans['outdoor']['630'])
-            od_1000.append(feeder.trans['outdoor']['1000'])
-            od_other.append(feeder.trans['outdoor']['other'])
-    return {"stations":stations, "feeders":feeders, "overLengths": overLengths, "cableLengths":cableLengths, "totalLengths":totalLengths, "citySides":citySides,
-            "kio_100":kio_100, "kio_250":kio_250, "kio_400":kio_400, "kio_630":kio_630, "kio_1000":kio_1000, "kio_other":kio_other, 
-            "id_100":id_100, "id_250":id_250, "id_400":id_400, "id_630":id_630, "id_1000":id_1000, "id_other":id_other, 
-            "od_100":od_100, "od_250":od_250, "od_400":od_400, "od_630":od_630, "od_1000":od_1000, "od_other":od_other}
 
 def transTextDic():
     feederName, feederType, transformer  = [],[],[]
