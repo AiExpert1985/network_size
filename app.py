@@ -1,4 +1,6 @@
-###### this is the styling version
+"""
+this is the styling version
+"""
 
 import pandas
 import tkinter
@@ -7,8 +9,10 @@ from tkinter import filedialog
 from tkinter import Label
 import xlsxwriter
 
-# CONSTANTS
-# titles dictionaries: Columns names for feeder, and transformer sheets, program will look for these titles in the uploaded feeder and transformer excel sheets
+"""
+CONSTANTS:
+Titles dictionaries: Columns names for feeder, and transformer sheets, program will look for these titles in the uploaded feeder and transformer excel sheets
+"""
 FEEDER_NAMES = {
         "FEEDER" : "اسم المغذي ورقمه",
         "STATION" : "اسم المحطة",
@@ -24,18 +28,22 @@ TRANS_NAMES = {
         "TYPE" : "نوع المحولة",
         "STATUS" : "الحالة"
         }
-# this constant is used for displaying check mark sign for user messages
-CHECK_MARK = u'\u2713'
+CHECK_MARK = u'\u2713' # This constant is used by the tk interface for displaying check mark sign for user messages
 
-# global variables
-# these variables are updated in the functions, but they must be declared as global at the begining of functions
+""" 
+Global variables:
+These variables are updated in the functions, but they must be declared as global at the begining of functions
+"""
 feedFrame = None # contains the frame read from feeders excel
 transFrame = None #contains the frame read from transformers excel
 userMessage = None # contains message displayed 
-f_flag = False # will be true if the the feeder file uploaded and processed successfully
-t_flag = False # will be true if the the transformers file uploaded and processed successfully
+feederFlag = False # will be true if the the feeder file uploaded and processed successfully
+transFlag = False # will be true if the the transformers file uploaded and processed successfully
 
 class Station11K:
+    """
+    Each station11k will contains its info and multiple unique feeder objects
+    """
     stationsDic = {}
     def __init__(self, name, citySide):
         self.name = name
@@ -46,6 +54,9 @@ class Station11K:
         self.feedersList.append(feeder)
 
 class Feeder:
+    """
+    Each feeder object contains all info related to the feeder
+    """
     objectsDic = {} # collection of current objects in the class for search
     def __init__(self, name):
         self.name = name
@@ -62,44 +73,34 @@ class Feeder:
     def totalLength(self):
         return self.cableLength + self.overLength
 
-def main():
-    global userMessage
-    window = tkinter.Tk()
-    window.title("تقارير قسم المعلوماتية V1")
-    window.geometry("400x380")
-    space1 = Label(window, text="")
-    space1.pack()
-    feederButton = Button(window, text="تحميل جدول المغذيات (ملف أكسل)",padx='75', pady='15', command=import_feeders)
-    feederButton.pack()
-    space2 = Label(window, text="")
-    space2.pack()
-    transButton = Button(window, text="تحميل جدول المحولات (ملف أكسل)",padx='75', pady='15', command=import_transformers)
-    transButton.pack()
-    space3 = Label(window, text="")
-    space3.pack()    
-    exportMinistry = Button(window, text="تصدير تقرير الوزارة",padx='15', pady='15', command=export_ministery_report)
-    exportMinistry.pack()
-    space4 = Label(window, text="")
-    space4.pack()    
-    exportTrans = Button(window, text="تصدير عدد المحولات",padx='15', pady='15', command=export_transformers_text)
-    exportTrans.pack()
-    space5 = Label(window, text="")
-    space5.pack()
-    userMessage = Label(window, text="", fg="red", font=("Helvetica", 12))
-    userMessage.pack()
-    window.mainloop()
-
-# validate if the columns titles in the sheet are the same as titles dictionaries
-def validate_columns(NAMES_LIST, columnsHeaders):
-    for key, value in NAMES_LIST.items():
-        if value not in columnsHeaders:
+def validate_columns(desiredHeaders, fileHeaders):
+    """
+    Functionality: Compare the dsired column headers (stored in the program) with the column headers read from excel sheet
+    Parameters:
+        (1) dictionary: the desired columns headers (stored in the program)
+        (2) list: headers read from the excel file
+    return: boolean
+        True: If stored headers, and headers read from the excel file are the same
+        False: If stored headers, and headers read from the excel file are not the same
+    """
+    for key, value in desiredHeaders.items():
+        if value not in fileHeaders:
             return False
     return True
 
-# import excel sheet contains feeders info            
+# extract all the info inside feeder excel sheet, and store it in Feeder and Station11k classes          
 def import_feeders():
+    """"
+    Functionality: 
+        Read data from feeder excel file, put the data in both Stations11k, and Feeder classes.
+        only the data of feeders which there status is 'بالعمل' are read, others will be neglected
+    Return:
+        nothing!
+    """
+    # include the global variables related to feeder, if not included, they can't be modified inside the function
     global feedFrame
-    global f_flag
+    global feederFlag
+    # Create constant variables instead of using the dictionary, make it cleaner and also easier to maintain in the future
     FEEDER_FEEDER = FEEDER_NAMES["FEEDER"]
     FEEDER_STATION = FEEDER_NAMES["STATION"]
     FEEDER_CITYSIDE = FEEDER_NAMES["CITYSIDE"]
@@ -107,24 +108,31 @@ def import_feeders():
     FEEDER_LENGTH = FEEDER_NAMES["LENGTH"]
     FEEDER_STATUS = FEEDER_NAMES["STATUS"]
     FEEDER_NUMBER = FEEDER_NAMES["NUMBER"]
+    # Upload excel file contain the feeders data
     try:
         filename = filedialog.askopenfilename(initialdir = "/",title = "اختر ملف المغذيات",filetypes = (("Excel files","*.xls"),("all files","*.*")))
-        feedFrame = pandas.read_excel(filename,sheet_name=0)
     except:
         userMessage.configure(text="خطأ اثناء تحميل ملف المغذيات", fg="red")
-        f_flag = False
+        feederFlag = False
         return
-    headers = feedFrame.columns.tolist()
-    if not validate_columns(FEEDER_NAMES,headers):
+    feedFrame = pandas.read_excel(filename,sheet_name=0) # Create panda fram  reading excel file
+    columnsHeaders = feedFrame.columns.tolist()  # Create a list contains all column header of the excel sheet
+    """ Validate the headers of the excel sheet """
+    if not validate_columns(FEEDER_NAMES,columnsHeaders):
         userMessage.configure(text="هنالك عدم مطابقة في عناوين الاعمدة في ملف المغذيات", fg="red")
-        f_flag = False
+        feederFlag = False
         return
+    """ Read the excel sheet (stored in pandas frame) row by row, and store result in Station11k, and Feeder classes
+        rows will be neglected if the status is not (بالعمل) """
     try:
         for index, row in feedFrame.iterrows():
             if row[FEEDER_STATUS] == "بالعمل":
-                feederName = str(row[FEEDER_FEEDER]).strip()
+                feederName = str(row[FEEDER_FEEDER]).strip() # remove leading spaces from the feeder name
+                """ check if the feeder was previously read, 
+                    if yes, then the data will be read and stored in the same feeder, 
+                    if not, a new feeder will be created, and then data stored in it """
                 feeder = Feeder.objectsDic.get(feederName, None)
-                if feeder is None:
+                if feeder is None: # If feeder is not previously read from another row in the sheet
                     feeder = Feeder(feederName)
                     feeder.number = row[FEEDER_NUMBER]
                     citySide = row[FEEDER_CITYSIDE]
@@ -140,16 +148,16 @@ def import_feeders():
                     feeder.cableLength = round(row[FEEDER_LENGTH],2) # keep only two digits after the dot
                 else:
                     print(f"Feeder {row[FEEDER_FEEDER]} has ({row[FEEDER_TYPE]}) type field")
-        userMessage.configure(text=f"تمت معالجة ملف المغذيات {CHECK_MARK}", fg="green")
-        f_flag = True
+        userMessage.configure(text=f"تمت معالجة ملف المغذيات {CHECK_MARK}", fg="green") # Display success message to user
+        feederFlag = True
     except:
-        userMessage.configure(text="حدث خطأ اثناء معالجة بيانات ملف المغذيات", fg="red")
-        f_flag = False
+        userMessage.configure(text="حدث خطأ اثناء معالجة بيانات ملف المغذيات", fg="red") # Display failure message to user
+        feederFlag = False # data will not be processed by the feeder processing functions
  
 # import transformers info 
 def import_transformers():
     global transFrame
-    global t_flag
+    global transFlag
     TRANS_FEEDER = TRANS_NAMES["FEEDER"]
     TRANS_SIZE = TRANS_NAMES["SIZE"]
     TRANS_TYPE = TRANS_NAMES["TYPE"]
@@ -159,12 +167,12 @@ def import_transformers():
         transFrame = pandas.read_excel(filename,sheet_name=0)
     except:
         userMessage.configure(text="خطأ اثناء تحميل ملف المحولات", fg="red")
-        t_flag = False
+        transFlag = False
         return
     headers = transFrame.columns.tolist()
     if not validate_columns(TRANS_NAMES,headers):
         userMessage.configure(text="هنالك عدم مطابقة في عناوين الاعمدة في ملف المحولات", fg="red")
-        t_flag = False
+        transFlag = False
         return
     try:        
         for index, row in transFrame.iterrows():
@@ -180,20 +188,20 @@ def import_transformers():
                         if transType in ['indoor', 'outdoor', 'kiosk']:
                             feeder.trans[transType]['other'] += 1
         userMessage.configure(text=f"تمت معالجة ملف المحولات {CHECK_MARK}", fg="green")
-        t_flag = True
+        transFlag = True
     except:
         userMessage.configure(text="حدث خطأ اثناء معالجة بيانات ملف المحولات", fg="red")
-        t_flag = False
+        transFlag = False
     
 def export_ministery_report():
-    if f_flag and t_flag:
+    if feederFlag and transFlag:
         exportExcel()
         userMessage.configure(text=f"تم تصدير تقرير الوزارة {CHECK_MARK}", fg="green")
     else:
         userMessage.configure(text="تأكد من تحميل الملفات بصورة صحيحة قبل محاولة تصديرها", fg="red")
         
 def export_transformers_text():
-    if f_flag and t_flag:
+    if feederFlag and transFlag:
         exportExcel()
         userMessage.configure(text=f"تم تصدير تقرير عدد المحولات {CHECK_MARK}", fg="green")
     else:
@@ -201,12 +209,15 @@ def export_transformers_text():
 
 def exportExcel():
     try:
+        # get the file name
         filename = filedialog.asksaveasfilename(filetypes=(("Excel files", "*.xlsx"),("All files", "*.*") ))
         if filename is None: # asksaveasfile return `None` if dialog closed with "cancel".
             return
+        # create workboo, and work sheet, and customize worksheet direction and size
         workbook = xlsxwriter.Workbook(filename + ".xlsx")
         worksheet = workbook.add_worksheet()
         worksheet.right_to_left()
+        worksheet.set_zoom(70)
         start_row = 4
         end_row = 4
         # formats of cell // here we format per cell, not per column
@@ -330,6 +341,33 @@ def transTextDic():
             odString = f"100x{od_100}+250x{od_250}+400x{od_400}+630x{od_630}+1000x{od_1000}+اخرىx{od_other}"
             transformer.append(odString)
     return {"Feeder":feederName, "Type":feederType, "transformer":transformer}
+
+def main():
+    global userMessage
+    window = tkinter.Tk()
+    window.title("تقارير قسم المعلوماتية V1")
+    window.geometry("400x380")
+    space1 = Label(window, text="")
+    space1.pack()
+    feederButton = Button(window, text="تحميل جدول المغذيات (ملف أكسل)",padx='75', pady='15', command=import_feeders)
+    feederButton.pack()
+    space2 = Label(window, text="")
+    space2.pack()
+    transButton = Button(window, text="تحميل جدول المحولات (ملف أكسل)",padx='75', pady='15', command=import_transformers)
+    transButton.pack()
+    space3 = Label(window, text="")
+    space3.pack()    
+    exportMinistry = Button(window, text="تصدير تقرير الوزارة",padx='15', pady='15', command=export_ministery_report)
+    exportMinistry.pack()
+    space4 = Label(window, text="")
+    space4.pack()    
+    exportTrans = Button(window, text="تصدير عدد المحولات",padx='15', pady='15', command=export_transformers_text)
+    exportTrans.pack()
+    space5 = Label(window, text="")
+    space5.pack()
+    userMessage = Label(window, text="", fg="red", font=("Helvetica", 12))
+    userMessage.pack()
+    window.mainloop()
 
 if __name__ == '__main__':
     main()
