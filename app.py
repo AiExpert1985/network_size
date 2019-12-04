@@ -213,6 +213,7 @@ def exportExcel():
         feeder_cell_format = workbook.add_format({'valign':'vcenter', 'border':True})
         title_cell_format = workbook.add_format({'align': 'center', 'valign':'vcenter', 'border':True, 'pattern':1, 'bg_color':'#d3d3d3'})
         cell_format = workbook.add_format({'align': 'center', 'valign':'vcenter', 'border':True})
+        sumFormat = workbook.add_format({'bold': True, 'font_size':14, 'align': 'center', 'valign':'vcenter', 'border':True})
         # titles of the columns
         worksheet.insert_image('A1', 'logo.png', {'x_scale': 1.451, 'y_scale': 1.451})
         worksheet.merge_range("A1:Y1", "GIS logo", cell_format)
@@ -236,6 +237,17 @@ def exportExcel():
                 worksheet.write(3, titleColumnIndex, title, title_cell_format)
                 titleColumnIndex += 1
         worksheet.merge_range("Y3:Y4","مجموع المحولات", title_cell_format)
+        # initiate counters, will be the last row in the sheet
+        totalFeeders = 0
+        totalCableLength = 0
+        totalOverLength = 0
+        totalCombinedLength = 0
+        totalTrans = {
+                "kiosk": {"100":0, "250":0, "400":0, "630":0, "1000":0, "other":0},
+                "indoor": {"100":0, "250":0, "400":0, "630":0, "1000":0, "other":0},
+                "outdoor": {"100":0, "250":0, "400":0, "630":0, "1000":0, "other":0}
+                }
+        totalCombinedTrans = 0
         # intersts data as rows
         for name, station in Station11K.stationsDic.items():
             feedersList = station.feedersList
@@ -248,24 +260,46 @@ def exportExcel():
                 worksheet.write(end_row, 5, feeder.totalLength(), cell_format)
                 transColumnIndex = 6
                 transTotal = 0
+                colors = {'kiosk':'#fef200', 'indoor':'#75d86a', 'outdoor':'#4dc3ea'}
                 for shape in ['kiosk', 'indoor', 'outdoor']:
+                    color = colors[shape]
+                    transCellFormat = workbook.add_format({'align': 'center', 'valign':'vcenter', 'border':True, 'pattern':1, 'bg_color':color})
                     for size in ['100', '250', '400', '630', '1000', 'other']:
                         transSum = feeder.trans[shape][size]
                         transTotal += transSum
-                        worksheet.write(end_row, transColumnIndex, transSum, cell_format)
+                        worksheet.write(end_row, transColumnIndex, transSum, transCellFormat)
                         transColumnIndex += 1
+                        totalTrans[shape][size] += transSum
                 worksheet.write(end_row, 24, transTotal, cell_format)
                 end_row += 1
+                totalFeeders += 1
+                totalCableLength += feeder.cableLength
+                totalOverLength += feeder.overLength
             worksheet.merge_range(start_row,0,end_row-1,0, name, cell_format)
             worksheet.merge_range(start_row,1,end_row-1,1, station.citySide, cell_format)
             worksheet.merge_range(end_row,0,end_row,24, "", title_cell_format)
             end_row += 1
             start_row = end_row
+        totalCombinedLength = totalCableLength + totalOverLength
+        worksheet.write(end_row, 0, "المجموع الكلي", sumFormat)
+        worksheet.write(end_row, 2, totalFeeders, sumFormat)
+        worksheet.write(end_row, 3, totalCableLength, sumFormat)
+        worksheet.write(end_row, 4, totalOverLength, sumFormat)
+        worksheet.write(end_row, 5, totalCombinedLength, sumFormat)
+        grandColIndex = 6
+        for shape in ['kiosk', 'indoor', 'outdoor']:
+            for size in ['100', '250', '400', '630', '1000', 'other']:
+                transColSum = totalTrans[shape][size]
+                worksheet.write(end_row, grandColIndex, transColSum, sumFormat)
+                grandColIndex += 1
+                totalCombinedTrans += transColSum
+        worksheet.write(end_row, 24, totalCombinedTrans, sumFormat)
         worksheet.set_column("A:A",18)
         worksheet.set_column("B:B",12)        
         worksheet.set_column("C:C",20)
         worksheet.set_column("D:F",12)
         worksheet.set_column("Y:Y",15)
+        worksheet.set_row(end_row, 40)
         workbook.close()
     except:
         userMessage.configure(text="حدث خطأ اثناء تصدير الملف", fg="red")
