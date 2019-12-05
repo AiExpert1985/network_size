@@ -1,5 +1,5 @@
 """
-this is the styling version
+this is the styling branch
 """
 
 import pandas
@@ -40,10 +40,10 @@ userMessage = None # contains message displayed
 feederFlag = False # will be true if the the feeder file uploaded and processed successfully
 transFlag = False # will be true if the the transformers file uploaded and processed successfully
 
+"""
+Each station11k will contains its info and multiple unique feeder objects
+"""
 class Station11K:
-    """
-    Each station11k will contains its info and multiple unique feeder objects
-    """
     stationsDic = {}
     def __init__(self, name, citySide):
         self.name = name
@@ -53,10 +53,10 @@ class Station11K:
     def addFeeder(self, feeder):
         self.feedersList.append(feeder)
 
+"""
+Each feeder object contains all info related to the feeder
+"""
 class Feeder:
-    """
-    Each feeder object contains all info related to the feeder
-    """
     objectsDic = {} # collection of current objects in the class for search
     def __init__(self, name):
         self.name = name
@@ -73,34 +73,33 @@ class Feeder:
     def totalLength(self):
         return self.cableLength + self.overLength
 
+"""
+Functionality: Compare the dsired column headers (stored in the program) with the column headers read from excel sheet
+Parameters:
+    (1) dictionary: the desired columns headers (stored in the program)
+    (2) list: headers read from the excel file
+return: boolean
+    True: If stored headers, and headers read from the excel file are the same
+    False: If stored headers, and headers read from the excel file are not the same
+"""
 def validate_columns(desiredHeaders, fileHeaders):
-    """
-    Functionality: Compare the dsired column headers (stored in the program) with the column headers read from excel sheet
-    Parameters:
-        (1) dictionary: the desired columns headers (stored in the program)
-        (2) list: headers read from the excel file
-    return: boolean
-        True: If stored headers, and headers read from the excel file are the same
-        False: If stored headers, and headers read from the excel file are not the same
-    """
     for key, value in desiredHeaders.items():
         if value not in fileHeaders:
             return False
     return True
 
-# extract all the info inside feeder excel sheet, and store it in Feeder and Station11k classes          
+""""
+Functionality: 
+    Read data from feeder excel file, put the data in both Stations11k, and Feeder classes.
+    only the data of feeders which there status is 'بالعمل' are read, others will be neglected
+Return:
+    nothing!
+"""
 def import_feeders():
-    """"
-    Functionality: 
-        Read data from feeder excel file, put the data in both Stations11k, and Feeder classes.
-        only the data of feeders which there status is 'بالعمل' are read, others will be neglected
-    Return:
-        nothing!
-    """
-    # include the global variables related to feeder, if not included, they can't be modified inside the function
+    """ include the global variables related to feeder, if not included, they can't be modified inside the function """
     global feedFrame
     global feederFlag
-    # Create constant variables instead of using the dictionary, make it cleaner and also easier to maintain in the future
+    """ Create constant variables instead of using the dictionary, make it cleaner and also easier to maintain in the future. """
     FEEDER_FEEDER = FEEDER_NAMES["FEEDER"]
     FEEDER_STATION = FEEDER_NAMES["STATION"]
     FEEDER_CITYSIDE = FEEDER_NAMES["CITYSIDE"]
@@ -108,7 +107,7 @@ def import_feeders():
     FEEDER_LENGTH = FEEDER_NAMES["LENGTH"]
     FEEDER_STATUS = FEEDER_NAMES["STATUS"]
     FEEDER_NUMBER = FEEDER_NAMES["NUMBER"]
-    # Upload excel file contain the feeders data
+    """ Upload excel file contain the feeders data """
     try:
         filename = filedialog.askopenfilename(initialdir = "/",title = "اختر ملف المغذيات",filetypes = (("Excel files","*.xls"),("all files","*.*")))
     except:
@@ -122,15 +121,19 @@ def import_feeders():
         userMessage.configure(text="هنالك عدم مطابقة في عناوين الاعمدة في ملف المغذيات", fg="red")
         feederFlag = False
         return
-    """ Read the excel sheet (stored in pandas frame) row by row, and store result in Station11k, and Feeder classes
-        rows will be neglected if the status is not (بالعمل) """
+    """ 
+    Read the excel sheet (stored in pandas frame) row by row, and store result in Station11k, and Feeder classes
+    rows will be neglected if the status is not (بالعمل) 
+    """
     try:
         for index, row in feedFrame.iterrows():
             if row[FEEDER_STATUS] == "بالعمل":
                 feederName = str(row[FEEDER_FEEDER]).strip() # remove leading spaces from the feeder name
-                """ check if the feeder was previously read, 
-                    if yes, then the data will be read and stored in the same feeder, 
-                    if not, a new feeder will be created, and then data stored in it """
+                """ 
+                check if the feeder was previously read, 
+                if yes, then the data will be read and stored in the same feeder, 
+                if not, a new feeder will be created, and then data stored in it 
+                """
                 feeder = Feeder.objectsDic.get(feederName, None)
                 if feeder is None: # If feeder is not previously read from another row in the sheet
                     feeder = Feeder(feederName)
@@ -149,173 +152,211 @@ def import_feeders():
                 else:
                     print(f"Feeder {row[FEEDER_FEEDER]} has ({row[FEEDER_TYPE]}) type field")
         userMessage.configure(text=f"تمت معالجة ملف المغذيات {CHECK_MARK}", fg="green") # Display success message to user
-        feederFlag = True
+        feederFlag = True  # data can be processed by the feeder processing functions
     except:
         userMessage.configure(text="حدث خطأ اثناء معالجة بيانات ملف المغذيات", fg="red") # Display failure message to user
         feederFlag = False # data will not be processed by the feeder processing functions
- 
-# import transformers info 
+
+""""
+Functionality: 
+    Read data from transformers excel file row by row, looks for transformers data of each existing feeder (in Feeder class)
+    only the data of transformers with status 'good' will be added, others will be neglected
+Return:
+    nothing!
+"""
 def import_transformers():
+    """ include the global variables related to feeder, if not included, they can't be modified inside the function """
     global transFrame
     global transFlag
+    """ Create constant variables instead of using the dictionary, make it cleaner and also easier to maintain in the future. """
     TRANS_FEEDER = TRANS_NAMES["FEEDER"]
     TRANS_SIZE = TRANS_NAMES["SIZE"]
     TRANS_TYPE = TRANS_NAMES["TYPE"]
     TRANS_STATUS = TRANS_NAMES["STATUS"]
+    """ Upload excel file contain the feeders data """
     try:
         filename = filedialog.askopenfilename(initialdir = "/",title = "اختر ملف المحولات",filetypes = (("Excel files","*.xls"),("all files","*.*")))
-        transFrame = pandas.read_excel(filename,sheet_name=0)
     except:
         userMessage.configure(text="خطأ اثناء تحميل ملف المحولات", fg="red")
         transFlag = False
         return
-    headers = transFrame.columns.tolist()
+    transFrame = pandas.read_excel(filename,sheet_name=0) # Create panda fram  reading excel file
+    headers = transFrame.columns.tolist() # Create a list contains all column header of the excel sheet
+    """ Validate the headers of the excel sheet """
     if not validate_columns(TRANS_NAMES,headers):
         userMessage.configure(text="هنالك عدم مطابقة في عناوين الاعمدة في ملف المحولات", fg="red")
         transFlag = False
         return
+    """ 
+    Read the excel sheet (stored in pandas frame) row by row, and store result in feeders
+    rows will be neglected if the status is not (good) 
+    """
     try:        
         for index, row in transFrame.iterrows():
             if row[TRANS_STATUS] == "good":
-                name = str(row[TRANS_FEEDER]).strip()
-                feeder = Feeder.objectsDic.get(name, None)
+                name = str(row[TRANS_FEEDER]).strip() # remove leading spaces from the feeder name
+                feeder = Feeder.objectsDic.get(name, None) # check if the feeder already exist in the feeders list
+                """ if feeder exist, add transformers data to it, if not, ignore it. """
                 if feeder is not None:
                     transType = row[TRANS_TYPE]
                     transSize = row[TRANS_SIZE]
+                    """ 
+                    if trans has type and size, add it to its proper place trans[type][size]
+                    if trans only has type, the add it to trans[type]['other']
+                    if trans doesn't has type, then ignore it.
+                    """
                     if transSize in ['100','250','400','630','1000'] and transType in ['indoor', 'outdoor', 'kiosk']:
                         feeder.trans[transType][transSize] += 1
                     else:
                         if transType in ['indoor', 'outdoor', 'kiosk']:
                             feeder.trans[transType]['other'] += 1
-        userMessage.configure(text=f"تمت معالجة ملف المحولات {CHECK_MARK}", fg="green")
-        transFlag = True
+        userMessage.configure(text=f"تمت معالجة ملف المحولات {CHECK_MARK}", fg="green") # user success message
+        transFlag = True # data can be processed by the feeder processing functions
     except:
-        userMessage.configure(text="حدث خطأ اثناء معالجة بيانات ملف المحولات", fg="red")
-        transFlag = False
-    
+        userMessage.configure(text="حدث خطأ اثناء معالجة بيانات ملف المحولات", fg="red") # user failure message
+        transFlag = False # data will not be processed by the feeder processing functions
+     
+"""
+Functionality:
+    if both excel files of feeders, and transformers are uploaded, and processed properly, 
+    this method will create an excel file, and puts in it all the data required for the ministery report.
+Returns:
+    Nothing !
+"""
 def export_ministery_report():
-    if feederFlag and transFlag:
-        exportExcel()
-        userMessage.configure(text=f"تم تصدير تقرير الوزارة {CHECK_MARK}", fg="green")
-    else:
+    """
+    First check whether the two excel files were uploaded and processed properly,
+    if not, the method will stop and ask user to upload and process the proper files 
+    """
+    if not feederFlag and not transFlag:
         userMessage.configure(text="تأكد من تحميل الملفات بصورة صحيحة قبل محاولة تصديرها", fg="red")
-        
-def export_transformers_text():
-    if feederFlag and transFlag:
-        exportExcel()
-        userMessage.configure(text=f"تم تصدير تقرير عدد المحولات {CHECK_MARK}", fg="green")
-    else:
-        userMessage.configure(text="تأكد من تحميل الملفات بصورة صحيحة قبل محاولة تصديرها", fg="red")
-
-def exportExcel():
+        return
     try:
-        # get the file name
+        """ get a file name from user browsing box """
         filename = filedialog.asksaveasfilename(filetypes=(("Excel files", "*.xlsx"),("All files", "*.*") ))
         if filename is None: # asksaveasfile return `None` if dialog closed with "cancel".
             return
-        # create workboo, and work sheet, and customize worksheet direction and size
+        """ create excel file workbook, and a worksheet, and customize the worksheet """
         workbook = xlsxwriter.Workbook(filename + ".xlsx")
         worksheet = workbook.add_worksheet()
-        worksheet.right_to_left()
-        worksheet.set_zoom(70)
-        start_row = 4
-        end_row = 4
-        # formats of cell // here we format per cell, not per column
-        feeder_cell_format = workbook.add_format({'valign':'vcenter', 'border':True})
-        title_cell_format = workbook.add_format({'align': 'center', 'valign':'vcenter', 'border':True, 'pattern':1, 'bg_color':'#d3d3d3'})
-        cell_format = workbook.add_format({'align': 'center', 'valign':'vcenter', 'border':True})
-        sumFormat = workbook.add_format({'bold': True, 'font_size':14, 'align': 'center', 'valign':'vcenter', 'border':True})
-        # titles of the columns
-        worksheet.insert_image('A1', 'logo.png', {'x_scale': 1.451, 'y_scale': 1.451})
-        worksheet.merge_range("A1:Y1", "GIS logo", cell_format)
-        worksheet.set_row(0,210)
-        worksheet.merge_range("A2:Y2", "مديرية توزيع كهرباء مركز نينوى", cell_format)
-        worksheet.set_row(1,25)
-        worksheet.merge_range("A3:A4", "اسم المحطة", title_cell_format)
-        worksheet.merge_range("B3:B4", "جانب المدينة", title_cell_format)
-        worksheet.merge_range("C3:C4","اسم المغذي", title_cell_format)
-        worksheet.merge_range("D3:F3","اطوال المغذيات (متر)", title_cell_format)
-        worksheet.write("D4", "ارضي", title_cell_format)
-        worksheet.write("E4", "هوائي", title_cell_format)
-        worksheet.write("F4", "الكلي", title_cell_format)
-        worksheet.merge_range("G3:L3","محولات صندوقية", title_cell_format)
-        worksheet.merge_range("M3:R3","غرف محولات", title_cell_format)
-        worksheet.merge_range("S3:X3","محولات هوائية", title_cell_format)
-        # add titles to transformers sizes
-        titleColumnIndex = 6
-        for i in range(3):
-            for title in [100, 250, 400, 630, 1000, "اخرى"]:
-                worksheet.write(3, titleColumnIndex, title, title_cell_format)
-                titleColumnIndex += 1
-        worksheet.merge_range("Y3:Y4","مجموع المحولات", title_cell_format)
-        # initiate counters, will be the last row in the sheet
-        totalFeeders = 0
-        totalCableLength = 0
-        totalOverLength = 0
-        totalCombinedLength = 0
-        totalTrans = {
-                "kiosk": {"100":0, "250":0, "400":0, "630":0, "1000":0, "other":0},
-                "indoor": {"100":0, "250":0, "400":0, "630":0, "1000":0, "other":0},
-                "outdoor": {"100":0, "250":0, "400":0, "630":0, "1000":0, "other":0}
-                }
-        totalCombinedTrans = 0
-        # intersts data as rows
-        for name, station in Station11K.stationsDic.items():
-            feedersList = station.feedersList
-            # sorting feeders inside a station according to their numbers
-            feedersList.sort(key=lambda x: x.number, reverse=False)
-            for feeder in feedersList:
-                worksheet.write(end_row, 2, feeder.name, feeder_cell_format)
-                worksheet.write(end_row, 3, feeder.cableLength, cell_format)
-                worksheet.write(end_row, 4, feeder.overLength, cell_format)
-                worksheet.write(end_row, 5, feeder.totalLength(), cell_format)
-                transColumnIndex = 6
-                transTotal = 0
-                colors = {'kiosk':'#fef200', 'indoor':'#75d86a', 'outdoor':'#4dc3ea'}
-                for shape in ['kiosk', 'indoor', 'outdoor']:
-                    color = colors[shape]
-                    transCellFormat = workbook.add_format({'align': 'center', 'valign':'vcenter', 'border':True, 'pattern':1, 'bg_color':color})
-                    for size in ['100', '250', '400', '630', '1000', 'other']:
-                        transSum = feeder.trans[shape][size]
-                        transTotal += transSum
-                        worksheet.write(end_row, transColumnIndex, transSum, transCellFormat)
-                        transColumnIndex += 1
-                        totalTrans[shape][size] += transSum
-                worksheet.write(end_row, 24, transTotal, cell_format)
-                end_row += 1
-                totalFeeders += 1
-                totalCableLength += feeder.cableLength
-                totalOverLength += feeder.overLength
-            worksheet.merge_range(start_row,0,end_row-1,0, name, cell_format)
-            worksheet.merge_range(start_row,1,end_row-1,1, station.citySide, cell_format)
-            worksheet.merge_range(end_row,0,end_row,24, "", title_cell_format)
-            end_row += 1
-            start_row = end_row
-        totalCombinedLength = totalCableLength + totalOverLength
-        worksheet.write(end_row, 0, "المجموع الكلي", sumFormat)
-        worksheet.write(end_row, 2, totalFeeders, sumFormat)
-        worksheet.write(end_row, 3, totalCableLength, sumFormat)
-        worksheet.write(end_row, 4, totalOverLength, sumFormat)
-        worksheet.write(end_row, 5, totalCombinedLength, sumFormat)
-        grandColIndex = 6
-        for shape in ['kiosk', 'indoor', 'outdoor']:
-            for size in ['100', '250', '400', '630', '1000', 'other']:
-                transColSum = totalTrans[shape][size]
-                worksheet.write(end_row, grandColIndex, transColSum, sumFormat)
-                grandColIndex += 1
-                totalCombinedTrans += transColSum
-        worksheet.write(end_row, 24, totalCombinedTrans, sumFormat)
+        worksheet.right_to_left() # make it arabic oriented
+        worksheet.set_zoom(70) # the zoom will be 70%
+        """ 
+        Create cell style per each type of cells
+        style (format) will be added per cell, because I found it eaiser to perform in XlsxWriter
+        """
+        titleCellFormat = workbook.add_format({'bold': True, 'font_size':14, 'align': 'center', 'valign':'vcenter', 'border':True, 'pattern':1, 'bg_color':'#d3d3d3'})
+        logoCellFormat = workbook.add_format({'bold': True, 'font_size':18, 'align': 'center', 'valign':'vcenter', 'border':True})
+        genericCellFormat = workbook.add_format({'align': 'center', 'valign':'vcenter', 'border':True})
+        sumCellFormat = workbook.add_format({'bold': True, 'font_size':14, 'align': 'center', 'valign':'vcenter', 'border':True})
+        """ set the width of columns """
         worksheet.set_column("A:A",18)
         worksheet.set_column("B:B",12)        
         worksheet.set_column("C:C",20)
         worksheet.set_column("D:F",12)
         worksheet.set_column("Y:Y",15)
-        worksheet.set_row(end_row, 40)
-        workbook.close()
+        """
+        Build title and log, which will be first 4 rows
+        """
+        """ 1st row for logo image """
+        worksheet.merge_range("A1:Y1", "", genericCellFormat) 
+        worksheet.set_row(0,210)
+        worksheet.insert_image('A1', 'logo.png', {'x_scale': 1.451, 'y_scale': 1.451})
+        """ 2nd row for department title """
+        worksheet.merge_range("A2:Y2", "مديرية توزيع كهرباء مركز نينوى", logoCellFormat)
+        worksheet.set_row(1,40)
+        """ 3rd and 4th rows for columns titles """
+        worksheet.set_row(2,25)
+        worksheet.set_row(3,25)
+        for cellRange, text in (["A3:A4","اسم المحطة"],["B3:B4","جانب المدينة"],["C3:C4","اسم المغذي"]):
+            worksheet.merge_range(cellRange, text, titleCellFormat)
+        worksheet.merge_range("D3:F3", "اطوال المغذيات - بالمتر", titleCellFormat)
+        for cellRange, text in (["D4","ارضي"],["E4","هوائي"],["F4","الكلي"]):
+            worksheet.write(cellRange, text, titleCellFormat)
+        titleColumnIndex = 6 # transformers' columns titles start at the 7th column (first 6 columns taken for station, city side, feeder length, etc.)
+        for cellRange, text in (["G3:L3","محولات صندوقية"],["M3:R3","غرف محولات"],["S3:X3","محولات هوائية"]):
+            worksheet.merge_range(cellRange, text, titleCellFormat)
+            for size in [100, 250, 400, 630, 1000, "اخرى"]:
+                worksheet.write(3, titleColumnIndex, size, titleCellFormat)
+                titleColumnIndex += 1
+        worksheet.merge_range("Y3:Y4","مجموع المحولات", titleCellFormat)
+        """ 
+        build data cells, loop through station, and put its feeders as rows.
+        we need two pointers, a pointer to the first row in the station, and point to the end row of the station, 
+        they will be used to (1) put the station name, and city side in merged cells their height equal to the number of rows in that station
+        and (2) know where the second station starts.
+        """
+        startRowIndex = 4 # starts at row number 5, because first 4 rows were taken for image, and titles
+        endRowIndex = 4 # before each new station, start and end pointers should be pointer at same row
+        """ 
+        initiate variables used to sum the data needed at the end of the sheet 
+        these will be updated when looping through stations and feeders
+        """
+        totalFeeders = 0
+        totalCableLength = 0
+        totalOverLength = 0
+        totalCombinedLength = 0
+        totalTransTypes = {
+                "kiosk": {"100":0, "250":0, "400":0, "630":0, "1000":0, "other":0},
+                "indoor": {"100":0, "250":0, "400":0, "630":0, "1000":0, "other":0},
+                "outdoor": {"100":0, "250":0, "400":0, "630":0, "1000":0, "other":0}
+                }
+        grandTransSum = 0 # this is the summation of all transformers in all feeders
+        """ loop through feeders for each station """
+        for name, station in Station11K.stationsDic.items():
+            feedersList = station.feedersList # can't use the sort function on the list if I don't store it in a variable first
+            feedersList.sort(key=lambda x: x.number, reverse=False) # sorting feeders inside a station according to their numbers
+            columnIndex = 2 # first two columns are taken for station name, and city side
+            for feeder in feedersList:
+                for text in (feeder.name, feeder.cableLength, feeder.overLength, feeder.totalLength()):
+                    worksheet.write(endRowIndex, columnIndex, text, genericCellFormat)
+                    columnIndex += 1
+                sumTransRow = 0 # sum the total transformers (all types) in each feeder (i.e. stations in each row)
+                colors = {'kiosk':'#fef200', 'indoor':'#75d86a', 'outdoor':'#4dc3ea'} # coloring each type of stations
+                for shape in ['kiosk', 'indoor', 'outdoor']:
+                    color = colors[shape] # when put colors[shape] in the format directly, I faced error in the program, so I put it first in variable then, used it
+                    """ I can't put below fromat at the begining of functions as other formats, because it useds the color variable, which is generated inside this loop"""
+                    transCellFormat = workbook.add_format({'align': 'center', 'valign':'vcenter', 'border':True, 'pattern':1, 'bg_color':color}) 
+                    for size in ['100', '250', '400', '630', '1000', 'other']:
+                        sumTransType = feeder.trans[shape][size] # the sumation of each type of transformer in one feeder
+                        worksheet.write(endRowIndex, columnIndex, sumTransType, transCellFormat)
+                        columnIndex += 1
+                        sumTransRow += sumTransType # add the transformers of specific type to the sumation of transformers in the current feeder
+                        totalTransTypes[shape][size] += sumTransType # add the transformers of specific type to the total transformers of this type (in all feeders)
+                worksheet.write(endRowIndex, columnIndex, sumTransRow, genericCellFormat)
+                """ update the total variables """
+                totalFeeders += 1
+                totalCableLength += feeder.cableLength
+                totalOverLength += feeder.overLength
+                columnIndex = 2 # reset column index for each new feeder
+                endRowIndex += 1 # end row index refer to next empty row
+            worksheet.merge_range(startRowIndex,0,endRowIndex-1,0, name, genericCellFormat) # add the station in the first column, with height equal all feeder rows
+            worksheet.merge_range(startRowIndex,1,endRowIndex-1,1, station.citySide, genericCellFormat) # add the city side in the first column, with height equal all feeder rows           
+            worksheet.merge_range(endRowIndex,0,endRowIndex,24, "", titleCellFormat) # create an empty row, works as separation between stations
+            endRowIndex += 1 # increase the row pointer to point to the next row after the empty one added.
+            startRowIndex = endRowIndex # At the end of each new loop, the row start and end indexes should be equal
+        """ finally, add the sumation row at the bottom of the sheet """
+        columnIndex = 0
+        totalCombinedLength = totalCableLength + totalOverLength
+        for text in ["المجموع الكلي", "", totalFeeders, totalCableLength, totalOverLength, totalCombinedLength]:
+            worksheet.write(endRowIndex, columnIndex, text, sumCellFormat)
+            columnIndex += 1
+        for shape in ['kiosk', 'indoor', 'outdoor']:
+            for size in ['100', '250', '400', '630', '1000', 'other']:
+                totalTransCol = totalTransTypes[shape][size]
+                worksheet.write(endRowIndex, columnIndex, totalTransCol, sumCellFormat)
+                grandTransSum += totalTransCol
+                columnIndex += 1
+        worksheet.write(endRowIndex, 24, grandTransSum, sumCellFormat) 
+        worksheet.set_row(endRowIndex, 40) # set the height of row, I couldn't do at the beginning with other formats becuase it uses a variable the its value couldn't be known at the beginning
+        workbook.close() # finally save the excel file
     except:
-        userMessage.configure(text="حدث خطأ اثناء تصدير الملف", fg="red")
+        userMessage.configure(text="حدث خطأ اثناء تصدير الملف", fg="red") # user message if any thing went wrong during executing the function
 
-def transTextDic():
+def export_transformers_text():
+    if not feederFlag and not transFlag:
+        userMessage.configure(text="تأكد من تحميل الملفات بصورة صحيحة قبل محاولة تصديرها", fg="red")
+        return
     feederName, feederType, transformer  = [],[],[]
     for name, feeder in Feeder.objectsDic.items():
         feederName.append(feeder.name)
