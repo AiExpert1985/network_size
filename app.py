@@ -156,6 +156,7 @@ def import_feeders():
     except:
         userMessage.configure(text="حدث خطأ اثناء معالجة بيانات ملف المغذيات", fg="red") # Display failure message to user
         feederFlag = False # data will not be processed by the feeder processing functions
+    return
 
 """"
 Functionality: 
@@ -215,6 +216,7 @@ def import_transformers():
     except:
         userMessage.configure(text="حدث خطأ اثناء معالجة بيانات ملف المحولات", fg="red") # user failure message
         transFlag = False # data will not be processed by the feeder processing functions
+    return
      
 """
 Functionality:
@@ -229,7 +231,7 @@ def export_ministery_report():
     if not, the method will stop and ask user to upload and process the proper files 
     """
     if not feederFlag and not transFlag:
-        userMessage.configure(text="تأكد من تحميل الملفات بصورة صحيحة قبل محاولة تصديرها", fg="red")
+        userMessage.configure(text="تأكد من تحميل الملفات بصورة صحيحة قبل محاولة تصدير التقرير", fg="red")
         return
     try:
         """ get a file name from user browsing box """
@@ -258,10 +260,10 @@ def export_ministery_report():
         """
         Build title and log, which will be first 4 rows
         """
-        """ 1st row for logo image """
+        """ 1st row for logo image, but I didn't load the image due to problem with pyinstaller --onefile """
         worksheet.merge_range("A1:Y1", "", genericCellFormat) 
         worksheet.set_row(0,210)
-        worksheet.insert_image('A1', 'logo.png', {'x_scale': 1.451, 'y_scale': 1.451})
+#        worksheet.insert_image('A1', 'logo.png', {'x_scale': 1.451, 'y_scale': 1.451})
         """ 2nd row for department title """
         worksheet.merge_range("A2:Y2", "مديرية توزيع كهرباء مركز نينوى", logoCellFormat)
         worksheet.set_row(1,40)
@@ -350,38 +352,74 @@ def export_ministery_report():
         worksheet.write(endRowIndex, 24, grandTransSum, sumCellFormat) 
         worksheet.set_row(endRowIndex, 40) # set the height of row, I couldn't do at the beginning with other formats becuase it uses a variable the its value couldn't be known at the beginning
         workbook.close() # finally save the excel file
+        userMessage.configure(text=f"تم تصدير تقرير الوزارة {CHECK_MARK}", fg="green") # user success message
     except:
-        userMessage.configure(text="حدث خطأ اثناء تصدير الملف", fg="red") # user message if any thing went wrong during executing the function
+        userMessage.configure(text="حدث خطأ اثناء تصدير تقرير الوزارة", fg="red") # user message if any thing went wrong during executing the function
+    return
 
-def export_transformers_text():
+"""
+Functionality:
+    if both excel files of feeders, and transformers are uploaded, and processed properly, 
+    this method will create an excel file, and creates the transformers report
+Returns:
+    Nothing !
+"""
+def export_transformers_report():
+    """
+    First check whether the two excel files were uploaded and processed properly,
+    if not, the method will stop and ask user to upload and process the proper files 
+    """
     if not feederFlag and not transFlag:
-        userMessage.configure(text="تأكد من تحميل الملفات بصورة صحيحة قبل محاولة تصديرها", fg="red")
+        userMessage.configure(text="تأكد من تحميل الملفات بصورة صحيحة قبل محاولة تصدير التقرير", fg="red")
         return
-    feederName, feederType, transformer  = [],[],[]
-    for name, feeder in Feeder.objectsDic.items():
-        feederName.append(feeder.name)
-        feederType.append("cable")
-        id_100 = feeder.trans['indoor']['100'] + feeder.trans['kiosk']['100']
-        id_250 = feeder.trans['indoor']['250'] + feeder.trans['kiosk']['250']
-        id_400 = feeder.trans['indoor']['400'] + feeder.trans['kiosk']['400']
-        id_630 = feeder.trans['indoor']['630'] + feeder.trans['kiosk']['630']
-        id_1000 = feeder.trans['indoor']['1000'] + feeder.trans['kiosk']['1000']
-        id_other = feeder.trans['indoor']['other'] + feeder.trans['kiosk']['other']
-        idStrig = f"100x{id_100}+250x{id_250}+400x{id_400}+630x{id_630}+1000x{id_1000}+اخرىx{id_other}"
-        transformer.append(idStrig)            
-        od_100 = feeder.trans['outdoor']['100']
-        od_250 = feeder.trans['outdoor']['250']
-        od_400 = feeder.trans['outdoor']['400']
-        od_630 = feeder.trans['outdoor']['630']
-        od_1000 = feeder.trans['outdoor']['1000']
-        od_other = feeder.trans['outdoor']['other']
-        od_total = od_100 + od_250 + od_400 + od_630 + od_1000 + od_other
-        if od_total>0:
-            feederName.append(name)
-            feederType.append("overhead")
-            odString = f"100x{od_100}+250x{od_250}+400x{od_400}+630x{od_630}+1000x{od_1000}+اخرىx{od_other}"
-            transformer.append(odString)
-    return {"Feeder":feederName, "Type":feederType, "transformer":transformer}
+    try:
+        """ get a file name from user browsing box """
+        filename = filedialog.asksaveasfilename(filetypes=(("Excel files", "*.xlsx"),("All files", "*.*") ))
+        if filename is None: # asksaveasfile return `None` if dialog closed with "cancel".
+            return
+        """ create excel file workbook, and a worksheet, and customize the worksheet """
+        workbook = xlsxwriter.Workbook(filename + ".xlsx")
+        worksheet = workbook.add_worksheet()
+        worksheet.right_to_left() # make it arabic oriented
+        titleFormat = workbook.add_format({'align': 'center', 'valign':'vcenter', 'border':True, 'pattern':1, 'bg_color':'#d3d3d3'})
+        cellFormat = workbook.add_format({'align': 'center', 'valign':'vcenter', 'border':True})
+        worksheet.set_column("A:A",20)
+        worksheet.set_column("C:C",40) 
+        """ fill title row """
+        worksheet.write("A1", "اسم المغذي", titleFormat)
+        worksheet.write("B1", "النوع", titleFormat)
+        worksheet.write("C1", "المحولات", titleFormat)
+        """ build sheet row by row """
+        rowIndex = 1
+        for name, feeder in Feeder.objectsDic.items():
+            id_100 = feeder.trans['indoor']['100'] + feeder.trans['kiosk']['100']
+            id_250 = feeder.trans['indoor']['250'] + feeder.trans['kiosk']['250']
+            id_400 = feeder.trans['indoor']['400'] + feeder.trans['kiosk']['400']
+            id_630 = feeder.trans['indoor']['630'] + feeder.trans['kiosk']['630']
+            id_1000 = feeder.trans['indoor']['1000'] + feeder.trans['kiosk']['1000']
+            id_other = feeder.trans['indoor']['other'] + feeder.trans['kiosk']['other']
+            idStrig = f"100x{id_100}+250x{id_250}+400x{id_400}+630x{id_630}+1000x{id_1000}+اخرىx{id_other}"
+            worksheet.write(rowIndex, 0, name, cellFormat)  
+            worksheet.write(rowIndex, 1, "Cable", cellFormat)
+            worksheet.write(rowIndex, 2, idStrig, cellFormat)
+            rowIndex += 1 # after filling the cable row, the index is increase by 1
+            od_100 = feeder.trans['outdoor']['100']
+            od_250 = feeder.trans['outdoor']['250']
+            od_400 = feeder.trans['outdoor']['400']
+            od_630 = feeder.trans['outdoor']['630']
+            od_1000 = feeder.trans['outdoor']['1000']
+            od_other = feeder.trans['outdoor']['other']
+            od_total = od_100 + od_250 + od_400 + od_630 + od_1000 + od_other
+            if od_total>0:
+                odString = f"100x{od_100}+250x{od_250}+400x{od_400}+630x{od_630}+1000x{od_1000}+اخرىx{od_other}"
+                worksheet.write(rowIndex, 0, name, cellFormat)  
+                worksheet.write(rowIndex, 1, "Over", cellFormat)
+                worksheet.write(rowIndex, 2, odString, cellFormat)
+                rowIndex += 1 # after filling the over row, the index is increase by 1         
+        workbook.close() # finally save the excel file
+        userMessage.configure(text=f"تم تصدير تقرير عدد المحولات {CHECK_MARK}", fg="green") # user success message
+    except:
+        userMessage.configure(text="حدث خطأ اثناء تصدير تقرير المحولات", fg="red") # user message if any thing went wrong during executing the function
 
 def main():
     global userMessage
@@ -402,7 +440,7 @@ def main():
     exportMinistry.pack()
     space4 = Label(window, text="")
     space4.pack()    
-    exportTrans = Button(window, text="تصدير عدد المحولات",padx='15', pady='15', command=export_transformers_text)
+    exportTrans = Button(window, text="تصدير عدد المحولات",padx='15', pady='15', command=export_transformers_report)
     exportTrans.pack()
     space5 = Label(window, text="")
     space5.pack()
