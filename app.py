@@ -384,7 +384,7 @@ def export_transformers_report():
         titleFormat = workbook.add_format({'align': 'center', 'valign':'vcenter', 'border':True, 'pattern':1, 'bg_color':'#d3d3d3'})
         cellFormat = workbook.add_format({'align': 'center', 'valign':'vcenter', 'border':True})
         worksheet.set_column("A:A",20)
-        worksheet.set_column("C:C",40) 
+        worksheet.set_column("C:C",45) 
         """ fill title row """
         worksheet.write("A1", "اسم المغذي", titleFormat)
         worksheet.write("B1", "النوع", titleFormat)
@@ -392,30 +392,23 @@ def export_transformers_report():
         """ build sheet row by row """
         rowIndex = 1
         for name, feeder in Feeder.objectsDic.items():
-            id_100 = feeder.trans['indoor']['100'] + feeder.trans['kiosk']['100']
-            id_250 = feeder.trans['indoor']['250'] + feeder.trans['kiosk']['250']
-            id_400 = feeder.trans['indoor']['400'] + feeder.trans['kiosk']['400']
-            id_630 = feeder.trans['indoor']['630'] + feeder.trans['kiosk']['630']
-            id_1000 = feeder.trans['indoor']['1000'] + feeder.trans['kiosk']['1000']
-            id_other = feeder.trans['indoor']['other'] + feeder.trans['kiosk']['other']
-            idStrig = f"100x{id_100}+250x{id_250}+400x{id_400}+630x{id_630}+1000x{id_1000}+اخرىx{id_other}"
-            worksheet.write(rowIndex, 0, name, cellFormat)  
-            worksheet.write(rowIndex, 1, "Cable", cellFormat)
-            worksheet.write(rowIndex, 2, idStrig, cellFormat)
-            rowIndex += 1 # after filling the cable row, the index is increase by 1
-            od_100 = feeder.trans['outdoor']['100']
-            od_250 = feeder.trans['outdoor']['250']
-            od_400 = feeder.trans['outdoor']['400']
-            od_630 = feeder.trans['outdoor']['630']
-            od_1000 = feeder.trans['outdoor']['1000']
-            od_other = feeder.trans['outdoor']['other']
-            od_total = od_100 + od_250 + od_400 + od_630 + od_1000 + od_other
-            if od_total>0:
-                odString = f"100x{od_100}+250x{od_250}+400x{od_400}+630x{od_630}+1000x{od_1000}+اخرىx{od_other}"
-                worksheet.write(rowIndex, 0, name, cellFormat)  
-                worksheet.write(rowIndex, 1, "Over", cellFormat)
-                worksheet.write(rowIndex, 2, odString, cellFormat)
-                rowIndex += 1 # after filling the over row, the index is increase by 1         
+            transText = {"Cable":"", "Over":""}
+            totalTrans = 0
+            for size in ('100', '250', '400', '630', '1000','other'):
+                idTransNum = feeder.trans['indoor'][size] + feeder.trans['kiosk'][size]
+                odTransNum = feeder.trans['outdoor'][size]
+                transText["Cable"] += f"{size}x{idTransNum} + "
+                transText["Over"] += f"{size}x{odTransNum} + "
+                totalTrans += odTransNum
+            """ if no transformers in the overhead, then make the text empty, so it will not be added to excel """
+            if totalTrans == 0:
+                transText["Over"] = ""
+            for cableType, transText in transText.items():
+                if len(transText) > 0:
+                    worksheet.write(rowIndex, 0, name, cellFormat)
+                    worksheet.write(rowIndex, 1, cableType, cellFormat)
+                    worksheet.write(rowIndex, 2, transText[:-2], cellFormat) # Remove last two char (" +") from the transformer text
+                    rowIndex += 1
         workbook.close() # finally save the excel file
         userMessage.configure(text=f"تم تصدير تقرير عدد المحولات {CHECK_MARK}", fg="green") # user success message
     except:
@@ -424,7 +417,7 @@ def export_transformers_report():
 def main():
     global userMessage
     window = tkinter.Tk()
-    window.title("تقارير قسم المعلوماتية V1")
+    window.title("GIS Reports V1.0")
     window.geometry("400x380")
     space1 = Label(window, text="")
     space1.pack()
