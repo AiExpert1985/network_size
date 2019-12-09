@@ -110,11 +110,11 @@ def import_feeders():
     """ Upload excel file contain the feeders data """
     try:
         filename = filedialog.askopenfilename(initialdir = "/",title = "اختر ملف المغذيات",filetypes = (("Excel files","*.xls"),("all files","*.*")))
+        feedFrame = pandas.read_excel(filename,sheet_name=0) # Create panda fram  reading excel file
     except:
-        userMessage.configure(text="خطأ اثناء تحميل ملف المغذيات", fg="red")
         feederFlag = False
+        userMessage.configure(text="لم يتم اختيار ملف المغذيات", fg="red") # Display failure message to user
         return
-    feedFrame = pandas.read_excel(filename,sheet_name=0) # Create panda fram  reading excel file
     columnsHeaders = feedFrame.columns.tolist()  # Create a list contains all column header of the excel sheet
     """ Validate the headers of the excel sheet """
     if not validate_columns(FEEDER_NAMES,columnsHeaders):
@@ -177,11 +177,11 @@ def import_transformers():
     """ Upload excel file contain the feeders data """
     try:
         filename = filedialog.askopenfilename(initialdir = "/",title = "اختر ملف المحولات",filetypes = (("Excel files","*.xls"),("all files","*.*")))
+        transFrame = pandas.read_excel(filename,sheet_name=0) # Create panda fram  reading excel file
     except:
-        userMessage.configure(text="خطأ اثناء تحميل ملف المحولات", fg="red")
+        userMessage.configure(text="لم يتم تحميل ملف المحولات", fg="red")
         transFlag = False
         return
-    transFrame = pandas.read_excel(filename,sheet_name=0) # Create panda fram  reading excel file
     headers = transFrame.columns.tolist() # Create a list contains all column header of the excel sheet
     """ Validate the headers of the excel sheet """
     if not validate_columns(TRANS_NAMES,headers):
@@ -248,6 +248,7 @@ def export_ministery_report():
         style (format) will be added per cell, because I found it eaiser to perform in XlsxWriter
         """
         titleCellFormat = workbook.add_format({'bold': True, 'font_size':14, 'align': 'center', 'valign':'vcenter', 'border':True, 'pattern':1, 'bg_color':'#d3d3d3'})
+        seperatorCellFormat = workbook.add_format({'bold': True, 'font_size':14, 'align': 'center', 'valign':'vcenter', 'border':True, 'pattern':1, 'bg_color':'red'})
         logoCellFormat = workbook.add_format({'bold': True, 'font_size':18, 'align': 'center', 'valign':'vcenter', 'border':True})
         genericCellFormat = workbook.add_format({'align': 'center', 'valign':'vcenter', 'border':True})
         sumCellFormat = workbook.add_format({'bold': True, 'font_size':14, 'align': 'center', 'valign':'vcenter', 'border':True})
@@ -334,7 +335,7 @@ def export_ministery_report():
                 endRowIndex += 1 # end row index refer to next empty row
             worksheet.merge_range(startRowIndex,0,endRowIndex-1,0, name, genericCellFormat) # add the station in the first column, with height equal all feeder rows
             worksheet.merge_range(startRowIndex,1,endRowIndex-1,1, station.citySide, genericCellFormat) # add the city side in the first column, with height equal all feeder rows           
-            worksheet.merge_range(endRowIndex,0,endRowIndex,24, "", titleCellFormat) # create an empty row, works as separation between stations
+            worksheet.merge_range(endRowIndex,0,endRowIndex,24, "", seperatorCellFormat) # create an empty row, works as separation between stations
             endRowIndex += 1 # increase the row pointer to point to the next row after the empty one added.
             startRowIndex = endRowIndex # At the end of each new loop, the row start and end indexes should be equal
         """ finally, add the sumation row at the bottom of the sheet """
@@ -418,27 +419,19 @@ def main():
     global userMessage
     window = tkinter.Tk()
     window.title("GIS Reports V1.0")
-    window.geometry("400x380")
-    space1 = Label(window, text="")
-    space1.pack()
-    feederButton = Button(window, text="تحميل جدول المغذيات (ملف أكسل)",padx='75', pady='15', command=import_feeders)
-    feederButton.pack()
-    space2 = Label(window, text="")
-    space2.pack()
-    transButton = Button(window, text="تحميل جدول المحولات (ملف أكسل)",padx='75', pady='15', command=import_transformers)
-    transButton.pack()
-    space3 = Label(window, text="")
-    space3.pack()    
-    exportMinistry = Button(window, text="تصدير تقرير الوزارة",padx='15', pady='15', command=export_ministery_report)
-    exportMinistry.pack()
-    space4 = Label(window, text="")
-    space4.pack()    
-    exportTrans = Button(window, text="تصدير عدد المحولات",padx='15', pady='15', command=export_transformers_report)
-    exportTrans.pack()
-    space5 = Label(window, text="")
-    space5.pack()
+    window.geometry("400x420")
+    gisLabel = Label(window, text="برنامج تقارير قسم المعلوماتية", fg="navy", font=("Helvetica", 16), height=2)
+    gisLabel.grid(row=0, column=0, padx=80, pady=10)
+    feederButton = Button(window, text="تحميل جدول المغذيات (ملف أكسل)", width=35, height=3, command=import_feeders)
+    feederButton.grid(row=2, column=0, padx=80, pady=5)
+    transButton = Button(window, text="تحميل جدول المحولات (ملف أكسل)", width=35, height=3, command=import_transformers)
+    transButton.grid(row=3, column=0, padx=50, pady=5)   
+    exportMinistry = Button(window, text="تصدير تقرير الوزارة", width=20, height=3, command=export_ministery_report)
+    exportMinistry.grid(row=4, column=0, padx=50, pady=10) 
+    exportTrans = Button(window, text="تصدير عدد المحولات", width=20, height=3, command=export_transformers_report)
+    exportTrans.grid(row=5,column=0)
     userMessage = Label(window, text="", fg="red", font=("Helvetica", 12))
-    userMessage.pack()
+    userMessage.grid(row=6, column=0, pady=20)
     window.mainloop()
 
 if __name__ == '__main__':
