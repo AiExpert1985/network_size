@@ -7,6 +7,7 @@ import tkinter
 from tkinter import Button
 from tkinter import filedialog
 from tkinter import Label
+from tkinter import PhotoImage
 import xlsxwriter
 
 """
@@ -264,7 +265,7 @@ def export_ministery_report():
         """ 1st row for logo image, but I didn't load the image due to problem with pyinstaller --onefile """
         worksheet.merge_range("A1:Y1", "", genericCellFormat) 
         worksheet.set_row(0,210)
-#        worksheet.insert_image('A1', 'logo.png', {'x_scale': 1.451, 'y_scale': 1.451})
+        worksheet.insert_image('A1', 'images\ministry.png', {'x_scale': 1.451, 'y_scale': 1.451})
         """ 2nd row for department title """
         worksheet.merge_range("A2:Y2", "مديرية توزيع كهرباء مركز نينوى", logoCellFormat)
         worksheet.set_row(1,40)
@@ -421,16 +422,19 @@ def main():
     window.title("GIS Reports V1.0")
     window.geometry("400x420")
     gisLabel = Label(window, text="برنامج تقارير قسم المعلوماتية", fg="navy", font=("Helvetica", 16), height=2)
-    gisLabel.grid(row=0, column=0, padx=80, pady=10)
-    feederButton = Button(window, text="تحميل جدول المغذيات (ملف أكسل)", width=35, height=3, command=import_feeders)
-    feederButton.grid(row=2, column=0, padx=80, pady=5)
-    transButton = Button(window, text="تحميل جدول المحولات (ملف أكسل)", width=35, height=3, command=import_transformers)
-    transButton.grid(row=3, column=0, padx=50, pady=5)   
-    exportMinistry = Button(window, text="تصدير تقرير الوزارة", width=20, height=3, command=export_ministery_report)
-    exportMinistry.grid(row=4, column=0, padx=50, pady=10) 
-    exportTrans = Button(window, text="تصدير عدد المحولات", width=20, height=3, command=export_transformers_report)
-    exportTrans.grid(row=5,column=0)
+    excelImage = PhotoImage(file = r"images\excel.png").subsample(4, 4) # create photo and resize it
+    openImage = PhotoImage(file = r"images\open.png").subsample(5, 5) # create photo and resize it
+    saveImage = PhotoImage(file = r"images\save.png").subsample(5, 5) # create photo and resize it
+    feederButton = Button(window, text="   تحميل جدول المغذيات     ", image = excelImage, compound = 'right', command=import_feeders)
+    transButton = Button(window, text="   تحميل جدول المحولات     ", image = excelImage, compound = 'right', command=import_transformers)
+    exportMinistry = Button(window, text="  تصدير تقرير الوزارة", image = saveImage, compound = 'left', command=export_ministery_report)
+    exportTrans = Button(window, text="  تصدير تقرير المحولات", image = saveImage, compound = 'left', command=export_transformers_report)
     userMessage = Label(window, text="", fg="red", font=("Helvetica", 12))
+    gisLabel.grid(row=0, column=0, padx=80, pady=10)
+    feederButton.grid(row=2, column=0, padx=80, pady=5, ipadx=5, ipady=5)
+    transButton.grid(row=3, column=0, padx=50, pady=5, ipadx=5, ipady=5)   
+    exportMinistry.grid(row=4, column=0, padx=50, pady=10, ipadx=10, ipady=10) 
+    exportTrans.grid(row=5,column=0, padx=50, pady=10, ipadx=10, ipady=10)
     userMessage.grid(row=6, column=0, pady=20)
     window.mainloop()
 
