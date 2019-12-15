@@ -7,7 +7,7 @@ import tkinter
 from tkinter import Frame, Button, PhotoImage, Label, LabelFrame, LEFT, RIGHT, NE
 from tkinter import filedialog
 import xlsxwriter
-from datetime import date
+from datetime import datetime
 
 """
 CONSTANTS:
@@ -96,6 +96,10 @@ Return:
     nothing!
 """
 def import_feeders():
+    """ if current date exceeded the expiry date, the program will show error message and stops working """
+    if not validate_date():
+        userMessage.configure(text="هنالك خطأ في البرنامج, اتصل بالمصصم على الرقم 07701791983 ", fg="red")
+        return
     """ include the global variables related to feeder, if not included, they can't be modified inside the function """
     global feedFrame
     global feederFlag
@@ -166,6 +170,10 @@ Return:
     nothing!
 """
 def import_transformers():
+    """ if current date exceeded the expiry date, the program will show error message and stops working """
+    if not validate_date():
+        userMessage.configure(text="هنالك خطأ في البرنامج, اتصل بالمصصم على الرقم 07701791983 ", fg="red")
+        return
     """ include the global variables related to feeder, if not included, they can't be modified inside the function """
     global transFrame
     global transFlag
@@ -226,6 +234,10 @@ Returns:
     Nothing !
 """
 def export_ministery_report():
+    """ if current date exceeded the expiry date, the program will show error message and stops working """
+    if not validate_date():
+        userMessage.configure(text="هنالك خطأ في البرنامج, اتصل بالمصصم على الرقم 07701791983 ", fg="red")
+        return
     """
     First check whether the two excel files were uploaded and processed properly,
     if not, the method will stop and ask user to upload and process the proper files 
@@ -366,6 +378,10 @@ Returns:
     Nothing !
 """
 def export_transformers_report():
+    """ if current date exceeded the expiry date, the program will show error message and stops working """
+    if not validate_date():
+        userMessage.configure(text="هنالك خطأ في البرنامج, اتصل بالمصصم على الرقم 07701791983 ", fg="red")
+        return
     """
     First check whether the two excel files were uploaded and processed properly,
     if not, the method will stop and ask user to upload and process the proper files 
@@ -414,6 +430,18 @@ def export_transformers_report():
         userMessage.configure(text=f"تم تصدير تقرير عدد المحولات {CHECK_MARK}", fg="green") # user success message
     except:
         userMessage.configure(text="حدث خطأ اثناء تصدير تقرير المحولات", fg="red") # user message if any thing went wrong during executing the function
+
+"""
+Functionality:
+    If the time exceeded predifined date (expiry date), the program will not work
+return: boolean
+    True: If the program did not exceeded the expiry date
+    False: If the program is not valid anymore (exceeded expiry date)
+"""
+def validate_date():
+    currentDate = datetime.now()
+    expiryDate = datetime.strptime("1/6/2020 4:00", "%d/%m/%Y %H:%M")
+    return expiryDate > currentDate
 
 def main():
     global userMessage
