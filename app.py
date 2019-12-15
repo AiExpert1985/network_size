@@ -4,10 +4,7 @@ this is the styling branch
 
 import pandas
 import tkinter
-from tkinter import Button
-from tkinter import filedialog
-from tkinter import Label
-from tkinter import PhotoImage
+from tkinter import *
 import xlsxwriter
 
 """
@@ -420,22 +417,28 @@ def main():
     global userMessage
     window = tkinter.Tk()
     window.title("GIS Reports V1.0")
-    window.geometry("400x420")
+    window.geometry("500x600")
     gisLabel = Label(window, text="برنامج تقارير قسم المعلوماتية", fg="navy", font=("Helvetica", 16), height=2)
-    excelImage = PhotoImage(file = r"images\excel.png").subsample(4, 4) # create photo and resize it
-    openImage = PhotoImage(file = r"images\open.png").subsample(5, 5) # create photo and resize it
+    gisLabel.pack()
+    importGroup = LabelFrame(window, text="    تحميل الملفات    ", padx=20, pady=10, labelanchor=NE)
+    importGroup.pack(padx=20, pady=20)
+    openImage = PhotoImage(file = r"images\open.png").subsample(5, 5) # create photo and resize it (with subsample)
+    feederButton = Button(importGroup, text="  جدول المغذيات     ", image = openImage, compound = 'right', command=import_feeders, cursor="hand2")
+    transButton = Button(importGroup, text="   جدول المحولات     ", image = openImage, compound = 'right', command=import_transformers, cursor="hand2")
+    feederButton.pack(side=RIGHT, padx=10, pady=10, ipadx=10, ipady=10)
+    transButton.pack(side=LEFT, padx=10, pady=10, ipadx=10, ipady=10)  
+    saveGroup = LabelFrame(window, text="    تصدير النتائج    ", padx=20, pady=10, labelanchor=NE)
+    saveGroup.pack(padx=20, pady=20)
     saveImage = PhotoImage(file = r"images\save.png").subsample(5, 5) # create photo and resize it
-    feederButton = Button(window, text="   تحميل جدول المغذيات     ", image = excelImage, compound = 'right', command=import_feeders)
-    transButton = Button(window, text="   تحميل جدول المحولات     ", image = excelImage, compound = 'right', command=import_transformers)
-    exportMinistry = Button(window, text="  تصدير تقرير الوزارة", image = saveImage, compound = 'left', command=export_ministery_report)
-    exportTrans = Button(window, text="  تصدير تقرير المحولات", image = saveImage, compound = 'left', command=export_transformers_report)
+    exportMinistry = Button(saveGroup, text="  تقرير الوزارة", image = saveImage, compound = 'left', command=export_ministery_report, cursor="hand2")
+    exportTrans = Button(saveGroup, text="  تقرير المحولات", image = saveImage, compound = 'left', command=export_transformers_report, cursor="hand2")
+    exportMinistry.pack(side=RIGHT, padx=10, pady=10, ipadx=10, ipady=10)
+    exportTrans.pack(side=LEFT, padx=10, pady=10, ipadx=10, ipady=10)
     userMessage = Label(window, text="", fg="red", font=("Helvetica", 12))
-    gisLabel.grid(row=0, column=0, padx=80, pady=10)
-    feederButton.grid(row=2, column=0, padx=80, pady=5, ipadx=5, ipady=5)
-    transButton.grid(row=3, column=0, padx=50, pady=5, ipadx=5, ipady=5)   
-    exportMinistry.grid(row=4, column=0, padx=50, pady=10, ipadx=10, ipady=10) 
-    exportTrans.grid(row=5,column=0, padx=50, pady=10, ipadx=10, ipady=10)
-    userMessage.grid(row=6, column=0, pady=20)
+    userMessage.pack(padx=10, pady=10)
+    exitImage = PhotoImage(file = r"images\exit.png").subsample(5, 5) # create photo and resize it
+    button = Button(window, text = "  خروج  ", command = window.destroy, cursor="hand2", fg="red", font=("Helvetica", 14)) # close the program window
+    button.pack(padx=20, pady=20, ipadx=15, ipady=15 )
     window.mainloop()
 
 if __name__ == '__main__':
