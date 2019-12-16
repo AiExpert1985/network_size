@@ -4,8 +4,10 @@ this is the styling branch
 
 import pandas
 import tkinter
-from tkinter import *
+from tkinter import Frame, Button, PhotoImage, Label, LabelFrame, LEFT, RIGHT, NE
+from tkinter import filedialog
 import xlsxwriter
+from datetime import date
 
 """
 CONSTANTS:
@@ -417,28 +419,38 @@ def main():
     global userMessage
     window = tkinter.Tk()
     window.title("GIS Reports V1.0")
-    window.geometry("500x600")
-    gisLabel = Label(window, text="برنامج تقارير قسم المعلوماتية", fg="navy", font=("Helvetica", 16), height=2)
-    gisLabel.pack()
+    window.geometry("500x700")
+    window.resizable(0,0) # prevent maximize or minimize the window
+    logoFrame = Frame(window)
+    gisLable1 =  Label(logoFrame, text="قسم التخطيط", fg="navy", font=("Helvetica", 14))
+    gisLable1.pack(side=RIGHT, padx=10, pady=10)
+    logoImage = PhotoImage(file = r"images\logo.png").subsample(9, 9) # create photo and resize it (with subsample)
+    gisLogo = Label(logoFrame, image = logoImage)
+    gisLogo.pack(side=RIGHT, padx=5, pady=5)
+    gisLable1 =  Label(logoFrame, text="شعبة المعلوماتية", fg="navy", font=("Helvetica", 14))
+    gisLable1.pack(side=RIGHT, padx=10, pady=10)
+    logoFrame.pack()
     importGroup = LabelFrame(window, text="    تحميل الملفات    ", padx=20, pady=10, labelanchor=NE)
-    importGroup.pack(padx=20, pady=20)
+    importGroup.pack(padx=15, pady=15)
     openImage = PhotoImage(file = r"images\open.png").subsample(5, 5) # create photo and resize it (with subsample)
-    feederButton = Button(importGroup, text="  جدول المغذيات     ", image = openImage, compound = 'right', command=import_feeders, cursor="hand2")
-    transButton = Button(importGroup, text="   جدول المحولات     ", image = openImage, compound = 'right', command=import_transformers, cursor="hand2")
+    feederButton = Button(importGroup, text="  جدول المغذيات     ", image = openImage, compound = 'right', command=import_feeders, cursor="hand2", font=("Helvetica", 12))
+    transButton = Button(importGroup, text="   جدول المحولات     ", image = openImage, compound = 'right', command=import_transformers, cursor="hand2", font=("Helvetica", 12))
     feederButton.pack(side=RIGHT, padx=10, pady=10, ipadx=10, ipady=10)
     transButton.pack(side=LEFT, padx=10, pady=10, ipadx=10, ipady=10)  
     saveGroup = LabelFrame(window, text="    تصدير النتائج    ", padx=20, pady=10, labelanchor=NE)
-    saveGroup.pack(padx=20, pady=20)
+    saveGroup.pack(padx=15, pady=15)
     saveImage = PhotoImage(file = r"images\save.png").subsample(5, 5) # create photo and resize it
     exportMinistry = Button(saveGroup, text="  تقرير الوزارة", image = saveImage, compound = 'left', command=export_ministery_report, cursor="hand2")
     exportTrans = Button(saveGroup, text="  تقرير المحولات", image = saveImage, compound = 'left', command=export_transformers_report, cursor="hand2")
     exportMinistry.pack(side=RIGHT, padx=10, pady=10, ipadx=10, ipady=10)
     exportTrans.pack(side=LEFT, padx=10, pady=10, ipadx=10, ipady=10)
-    userMessage = Label(window, text="", fg="red", font=("Helvetica", 12))
-    userMessage.pack(padx=10, pady=10)
-    exitImage = PhotoImage(file = r"images\exit.png").subsample(5, 5) # create photo and resize it
-    button = Button(window, text = "  خروج  ", command = window.destroy, cursor="hand2", fg="red", font=("Helvetica", 14)) # close the program window
-    button.pack(padx=20, pady=20, ipadx=15, ipady=15 )
+    messageGroup = LabelFrame(window, text="    رسائل المستخدم    ", padx=20, pady=10, labelanchor=NE)
+    messageGroup.pack(padx=15, pady=15)
+    userMessage = Label(messageGroup, text=" مرحبا بك في برنامج تقارير قسم المعلوماتية ", fg="green", font=("Helvetica", 12))
+    userMessage.pack(padx=15, pady=15)
+    exitImage = PhotoImage(file = r"images\exit.png").subsample(6, 6) # create photo and resize it
+    button = Button(window, text = "  خروج  ", image = exitImage, compound = 'left', command = window.destroy, cursor="hand2", fg="navy", font=("Helvetica", 14)) # close the program window
+    button.pack(side=LEFT, padx=20, pady=20, ipadx=10, ipady=10 )
     window.mainloop()
 
 if __name__ == '__main__':

@@ -1,4 +1,7 @@
 openpyxl==3.0.1
 pandas==0.25.3
 PyInstaller==3.5
+XlsxWriter==1.2.6
+DateTime==4.3
+PyInstaller==3.5
 xlrd==1.2.0
