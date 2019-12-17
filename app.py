@@ -242,7 +242,7 @@ def export_ministery_report():
     First check whether the two excel files were uploaded and processed properly,
     if not, the method will stop and ask user to upload and process the proper files 
     """
-    if not feederFlag and not transFlag:
+    if not feederFlag or not transFlag:
         userMessage.configure(text="تأكد من تحميل الملفات بصورة صحيحة قبل محاولة تصدير التقرير", fg="red")
         return
     try:
@@ -386,7 +386,7 @@ def export_transformers_report():
     First check whether the two excel files were uploaded and processed properly,
     if not, the method will stop and ask user to upload and process the proper files 
     """
-    if not feederFlag and not transFlag:
+    if not feederFlag or not transFlag:
         userMessage.configure(text="تأكد من تحميل الملفات بصورة صحيحة قبل محاولة تصدير التقرير", fg="red")
         return
     try:
@@ -450,31 +450,31 @@ def main():
     window.geometry("650x700")
 #    window.resizable(0,0) # prevent maximize or minimize the window
     logoFrame = Frame(window)
-    gisLable1 =  Label(logoFrame, text="قسم التخطيط", fg="navy", font=("Helvetica", 14))
+    gisLable1 =  Label(logoFrame, text="قسم التخطيط", fg="navy", font=("Helvetica", 20))
     gisLable1.pack(side=RIGHT, padx=10, pady=10)
     logoImage = PhotoImage(file = r"images\logo.png").subsample(9, 9) # create photo and resize it (with subsample)
     gisLogo = Label(logoFrame, image = logoImage)
     gisLogo.pack(side=RIGHT, padx=5, pady=5)
-    gisLable1 =  Label(logoFrame, text="شعبة المعلوماتية", fg="navy", font=("Helvetica", 14))
+    gisLable1 =  Label(logoFrame, text="شعبة المعلوماتية", fg="navy", font=("Helvetica", 20))
     gisLable1.pack(side=RIGHT, padx=10, pady=10)
     logoFrame.pack()
     importGroup = LabelFrame(window, text="    تحميل الملفات    ", padx=20, pady=10, labelanchor=NE)
     importGroup.pack(padx=15, pady=15)
     openImage = PhotoImage(file = r"images\open.png").subsample(5, 5) # create photo and resize it (with subsample)
-    feederButton = Button(importGroup, text="  جدول المغذيات     ", image = openImage, compound = 'right', command=import_feeders, cursor="hand2", font=("Helvetica", 12))
-    transButton = Button(importGroup, text="   جدول المحولات     ", image = openImage, compound = 'right', command=import_transformers, cursor="hand2", font=("Helvetica", 12))
+    feederButton = Button(importGroup, text="  جدول المغذيات     ", image = openImage, compound = 'right', command=import_feeders, cursor="hand2", font=("Helvetica", 14))
+    transButton = Button(importGroup, text="   جدول المحولات     ", image = openImage, compound = 'right', command=import_transformers, cursor="hand2", font=("Helvetica", 14))
     feederButton.pack(side=RIGHT, padx=10, pady=10, ipadx=10, ipady=10)
     transButton.pack(side=LEFT, padx=10, pady=10, ipadx=10, ipady=10)  
     saveGroup = LabelFrame(window, text="    تصدير النتائج    ", padx=20, pady=10, labelanchor=NE)
     saveGroup.pack(padx=15, pady=15)
     saveImage = PhotoImage(file = r"images\save.png").subsample(5, 5) # create photo and resize it
-    exportMinistry = Button(saveGroup, text="  تقرير الوزارة", image = saveImage, compound = 'left', command=export_ministery_report, cursor="hand2")
-    exportTrans = Button(saveGroup, text="  تقرير المحولات", image = saveImage, compound = 'left', command=export_transformers_report, cursor="hand2")
+    exportMinistry = Button(saveGroup, text="  تقرير الوزارة", image = saveImage, compound = 'left', command=export_ministery_report, cursor="hand2", font=("Helvetica", 14))
+    exportTrans = Button(saveGroup, text="  تقرير المحولات", image = saveImage, compound = 'left', command=export_transformers_report, cursor="hand2", font=("Helvetica", 14))
     exportMinistry.pack(side=RIGHT, padx=10, pady=10, ipadx=10, ipady=10)
     exportTrans.pack(side=LEFT, padx=10, pady=10, ipadx=10, ipady=10)
     messageGroup = LabelFrame(window, text="    رسائل المستخدم    ", padx=20, pady=10, labelanchor=NE)
     messageGroup.pack(padx=15, pady=15)
-    userMessage = Label(messageGroup, text=" مرحبا بك في برنامج تقارير قسم المعلوماتية ", fg="green", font=("Helvetica", 12))
+    userMessage = Label(messageGroup, text=" مرحبا بك في برنامج تقارير قسم المعلوماتية ", fg="green", font=("Helvetica", 14))
     userMessage.pack(padx=15, pady=15)
     exitImage = PhotoImage(file = r"images\exit.png").subsample(6, 6) # create photo and resize it
     button = Button(window, text = "  خروج  ", image = exitImage, compound = 'left', command = window.destroy, cursor="hand2", fg="navy", font=("Helvetica", 14)) # close the program window
