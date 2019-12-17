@@ -447,8 +447,8 @@ def main():
     global userMessage
     window = tkinter.Tk()
     window.title("GIS Reports V1.0")
-    window.geometry("500x700")
-    window.resizable(0,0) # prevent maximize or minimize the window
+    window.geometry("650x700")
+#    window.resizable(0,0) # prevent maximize or minimize the window
     logoFrame = Frame(window)
     gisLable1 =  Label(logoFrame, text="قسم التخطيط", fg="navy", font=("Helvetica", 14))
     gisLable1.pack(side=RIGHT, padx=10, pady=10)
