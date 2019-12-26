@@ -2,8 +2,7 @@ import pandas
 import xlsxwriter
 from datetime import datetime
 import tkinter
-from tkinter import Frame, Button, PhotoImage, Label, LabelFrame, LEFT, RIGHT, NE
-from tkinter import filedialog
+from tkinter import Frame, Button, PhotoImage, Label, LabelFrame, LEFT, RIGHT, NE, filedialog
 
 
 """
