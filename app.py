@@ -221,7 +221,19 @@ def import_transformers():
         userMessage.configure(text="حدث خطأ اثناء معالجة بيانات ملف المحولات", fg="red") # user failure message
         transFlag = False # data will not be processed by the feeder processing functions
     return
-     
+
+def import_sources():
+    pass
+
+
+def import_loads():
+    pass
+
+
+def export_sources_report():
+    pass
+
+
 """
 Functionality:
     if both excel files of feeders, and transformers are uploaded, and processed properly, 
@@ -439,42 +451,65 @@ def validate_date():
     expiryDate = datetime.strptime("1/6/2020 4:00", "%d/%m/%Y %H:%M")
     return expiryDate > currentDate
 
+"""
+Functionality:
+    main function that provides an interface for running the program
+return: 
+    Nothing
+"""
 def main():
     global userMessage
     window = tkinter.Tk()
     window.title("GIS Reports V1.0")
-    window.geometry("650x700")
-#    window.resizable(0,0) # prevent maximize or minimize the window
+    window.geometry("900x700")
+    """ GIS logo """
     logoFrame = Frame(window)
     gisLable1 =  Label(logoFrame, text="قسم التخطيط", fg="navy", font=("Helvetica", 20))
     gisLable1.pack(side=RIGHT, padx=10, pady=10)
-    logoImage = PhotoImage(file = r"images\logo.png").subsample(9, 9) # create photo and resize it (with subsample)
+    logoImage = PhotoImage(file = r"images\logo.png").subsample(10, 10) # create photo and resize it (with subsample)
     gisLogo = Label(logoFrame, image = logoImage)
     gisLogo.pack(side=RIGHT, padx=5, pady=5)
     gisLable1 =  Label(logoFrame, text="شعبة المعلوماتية", fg="navy", font=("Helvetica", 20))
     gisLable1.pack(side=RIGHT, padx=10, pady=10)
     logoFrame.pack()
+    """ importing files """
     importGroup = LabelFrame(window, text="    تحميل الملفات    ", padx=20, pady=10, labelanchor=NE)
-    importGroup.pack(padx=15, pady=15)
+    importGroup.pack()
     openImage = PhotoImage(file = r"images\open.png").subsample(5, 5) # create photo and resize it (with subsample)
-    feederButton = Button(importGroup, text="  جدول المغذيات     ", image = openImage, compound = 'right', command=import_feeders, cursor="hand2", font=("Helvetica", 14))
-    transButton = Button(importGroup, text="   جدول المحولات     ", image = openImage, compound = 'right', command=import_transformers, cursor="hand2", font=("Helvetica", 14))
-    feederButton.pack(side=RIGHT, padx=10, pady=10, ipadx=15, ipady=7)
-    transButton.pack(side=LEFT, padx=10, pady=10, ipadx=15, ipady=7)  
+    """ left subframe """
+    leftSubFrame = Frame(importGroup)
+    leftSubFrame.pack(side=LEFT, padx=5, pady=5)
+    rightSubFrame = Frame(importGroup)
+    feeder33Button = Button(leftSubFrame, text="   مصادر 33 كف   ", image = openImage, compound = 'right', command=import_sources, cursor="hand2", font=("Helvetica", 14))
+    feeder11Button = Button(leftSubFrame, text="   مغذيات 11 كف   ", image = openImage, compound = 'right', command=import_feeders, cursor="hand2", font=("Helvetica", 14))
+    feeder11Button.pack(padx=10, pady=5, ipadx=15, ipady=5)
+    feeder33Button.pack(padx=10, pady=5, ipadx=15, ipady=5)
+    """ right subframe """
+    rightSubFrame.pack(side=RIGHT, padx=5, pady=5)
+    loadsButton = Button(rightSubFrame, text="     جدول احمال        ", image = openImage, compound = 'right', command=import_loads, cursor="hand2", font=("Helvetica", 14))
+    transButton = Button(rightSubFrame, text="   جدول المحولات     ", image = openImage, compound = 'right', command=import_transformers, cursor="hand2", font=("Helvetica", 14))
+    transButton.pack(padx=10, pady=5, ipadx=15, ipady=5)
+    loadsButton.pack(padx=10, pady=5, ipadx=15, ipady=5)
+    """ save files """
     saveGroup = LabelFrame(window, text="    تصدير النتائج    ", padx=20, pady=10, labelanchor=NE)
     saveGroup.pack(padx=15, pady=15)
     saveImage = PhotoImage(file = r"images\save.png").subsample(5, 5) # create photo and resize it
     exportMinistry = Button(saveGroup, text="  تقرير الوزارة", image = saveImage, compound = 'left', command=export_ministery_report, cursor="hand2", font=("Helvetica", 14))
     exportTrans = Button(saveGroup, text="  تقرير المحولات", image = saveImage, compound = 'left', command=export_transformers_report, cursor="hand2", font=("Helvetica", 14))
+    export33Kv = Button(saveGroup, text="   تقرير مصادر   ", image = saveImage, compound = 'left', command=export_sources_report, cursor="hand2", font=("Helvetica", 14))
+    exportTrans.pack(side=RIGHT, padx=10, pady=10, ipadx=15, ipady=7)
     exportMinistry.pack(side=RIGHT, padx=10, pady=10, ipadx=15, ipady=7)
-    exportTrans.pack(side=LEFT, padx=10, pady=10, ipadx=15, ipady=7)
+    export33Kv.pack(side=RIGHT, padx=10, pady=10, ipadx=15, ipady=7)
+    """ User message """
     messageGroup = LabelFrame(window, text="    رسائل المستخدم    ", padx=20, pady=10, labelanchor=NE)
-    messageGroup.pack(padx=15, pady=15)
+    messageGroup.pack(padx=7, pady=7)
     userMessage = Label(messageGroup, text=" مرحبا بك في برنامج تقارير قسم المعلوماتية ", fg="green", font=("Helvetica", 14))
-    userMessage.pack(padx=15, pady=15)
+    userMessage.pack(padx=7, pady=7)
+    """ Exit Button """
     exitImage = PhotoImage(file = r"images\exit.png").subsample(6, 6) # create photo and resize it
     button = Button(window, text = "  خروج  ", image = exitImage, compound = 'left', command = window.destroy, cursor="hand2", fg="navy", font=("Helvetica", 14)) # close the program window
     button.pack(side=LEFT, padx=20, pady=20, ipadx=10, ipady=10 )
+
     window.mainloop()
 
 if __name__ == '__main__':
