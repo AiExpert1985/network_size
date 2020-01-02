@@ -4,7 +4,6 @@ from datetime import datetime
 import tkinter
 from tkinter import Frame, Button, PhotoImage, Label, LabelFrame, LEFT, RIGHT, NE, filedialog
 
-
 """
 CONSTANTS:
 Titles dictionaries: Columns names for feeder, and transformer sheets, program will look for these titles in the uploaded feeder and transformer excel sheets
@@ -24,6 +23,22 @@ TRANS_NAMES = {
         "TYPE" : "نوع المحولة",
         "STATUS" : "الحالة"
         }
+SOURCE_NAMES = {
+        "NAME" : "اسم المغذي ورقمه",
+        "STATION_33" : "sub_name33",
+        "STATION_132" : "اسم المحطة132 التي تغذيها",
+        "STATUS" : "الحالة",
+		"OPERATION": "حالة المغذي",
+		"LENGTH" : "SHAPE.STLength()",
+        "NUMBER" : "رقم المغذي",
+        "CITYSIDE": "جانب المدينة"
+		}
+LOAD_NAMES = {
+        "LOAD" : "AMPs",
+        "VOLTS" : "الفولطية",
+        "FEEDER" : "اسم المغذي ورقمه",
+        }
+
 CHECK_MARK = u'\u2713' # This constant is used by the tk interface for displaying check mark sign for user messages
 
 """ 
@@ -31,10 +46,14 @@ Global variables:
 These variables are updated in the functions, but they must be declared as global at the begining of functions
 """
 feedFrame = None # contains the frame read from feeders excel
-transFrame = None #contains the frame read from transformers excel
+transFrame = None # contains the frame read from transformers excel
+loadFrame = None # contains the frame read from load excel
+sourceFrame = None # contains the frame read from source excel
 userMessage = None # contains message displayed 
 feederFlag = False # will be true if the the feeder file uploaded and processed successfully
 transFlag = False # will be true if the the transformers file uploaded and processed successfully
+loadFlag = False # will be true if the the loads file uploaded and processed successfully
+sourceFlag = False # will be true if the the sources file uploaded and processed successfully
 
 """
 Each station11k will contains its info and multiple unique feeder objects
@@ -45,15 +64,32 @@ class Station11K:
         self.name = name
         self.citySide = citySide
         self.feedersList = []
+        self.sourcesList = []
         Station11K.stationsDic[name] = self
     def addFeeder(self, feeder):
         self.feedersList.append(feeder)
+    def addSource(self, source):
+        self.sourcesList.append(source)
+
+"""
+Each source object contains all info related to the source
+"""
+class Source:
+    objectsDic = {} # collection of current objects in the class to search if the source already exist before adding it
+    def __init__(self, name):
+        self.name = name
+        self.station132 = ""
+        self.length = 0
+        self.number = ""
+        self.load = ""
+        self.volts = "33 KV"
+        Source.objectsDic[name] = self # add the new source to the collection of the class
 
 """
 Each feeder object contains all info related to the feeder
 """
 class Feeder:
-    objectsDic = {} # collection of current objects in the class for search
+    objectsDic = {} # collection of current objects in the class to search if the feeder already exist before adding it
     def __init__(self, name):
         self.name = name
         self.cableLength = 0
@@ -65,6 +101,8 @@ class Feeder:
                 "indoor": {"100":0, "250":0, "400":0, "630":0, "1000":0, "other":0},
                 "outdoor": {"100":0, "250":0, "400":0, "630":0, "1000":0, "other":0}
                 }
+        self.load = ""
+        self.volts = "11 KV"
         Feeder.objectsDic[name] = self
     def totalLength(self):
         return self.cableLength + self.overLength
@@ -223,16 +261,77 @@ def import_transformers():
     return
 
 def import_sources():
-    pass
-
+    NAME = SOURCE_NAMES["NAME"]
+    STATION_33 = SOURCE_NAMES["STATION_33"]
+    STATION_132 = SOURCE_NAMES["STATION_132"]
+    STATUS = SOURCE_NAMES["STATUS"]
+    OPERATION = SOURCE_NAMES["OPERATION"]
+    LENGTH = SOURCE_NAMES["LENGTH"]
+    NUMBER = SOURCE_NAMES["NUMBER"]
+    CITYSIDE = SOURCE_NAMES["CITYSIDE"]
+    filename = filedialog.askopenfilename(initialdir = "/",title = "اختر ملف المحولات",filetypes = (("Excel files","*.xls"),("all files","*.*")))
+    transFrame = pandas.read_excel(filename,sheet_name=0) # create panda frame by reading excel file
+    for index, row in transFrame.iterrows():
+        if row[STATUS] == "good" and row[OPERATION] == "بالعمل":
+            sourceName = str(row[NAME]).strip() # remove leading spaces from the source name
+            """ 
+            check if the source was previously read, 
+            if yes, then the data will be read and stored in the same source, 
+            if not, a new feeder will be created, and then data stored in it 
+            """
+            source = Source.objectsDic.get(sourceName, None)
+            if source is None: # If source is not previously read from another row in the sheet
+                source = Source(sourceName)
+                source.number = row[NUMBER]
+                citySide = row[CITYSIDE]
+                station33Name = row[STATION_33]
+                station = Station11K.stationsDic.get(station33Name, None)
+                if station is None:
+                    station = Station11K(station33Name, citySide)
+                station.addSource(source)
+                source.station132 = row[STATION_132]
+                source.length = round(row[LENGTH],2)
 
 def import_loads():
-    pass
-
+    LOAD = LOAD_NAMES["LOAD"]
+    VOLTS = LOAD_NAMES["VOLTS"]
+    NAME = LOAD_NAMES["FEEDER"]
+    filename = filedialog.askopenfilename(initialdir = "/",title = "اختر ملف المحولات",filetypes = (("Excel files","*.xls"),("all files","*.*")))
+    transFrame = pandas.read_excel(filename,sheet_name=0) # Create panda fram  reading excel file
+    for index, row in transFrame.iterrows():
+        name = str(row[NAME]).strip() # remove leading spaces from the feeder name
+        if row[VOLTS] == "11 KV":
+            feeder = Feeder.objectsDic.get(name, None) # check if the feeder already exist in the feeders list
+            """ if feeder exist, add transformers data to it, if not, ignore it. """
+            if feeder is not None:
+                feeder.load = row[LOAD]
+        elif row[VOLTS] == "33 KV":
+            source = Source.objectsDic.get(name, None) # check if the feeder already exist in the feeders list
+            """ if feeder exist, add transformers data to it, if not, ignore it. """
+            if source is not None:
+                source.load = row[LOAD]
+        else:
+            print(f"Feeder {row[NAME]} has wrong voltage field")
 
 def export_sources_report():
-    pass
-
+    filename = filedialog.asksaveasfilename(filetypes=(("Excel files", "*.xlsx"),("All files", "*.*") ))
+    if filename is None: # asksaveasfile return `None` if dialog closed with "cancel".
+        return
+    """ create excel file workbook, and a worksheet, and customize the worksheet """
+    workbook = xlsxwriter.Workbook(filename + ".xlsx")
+    worksheet = workbook.add_worksheet()
+    worksheet.right_to_left() # make it arabic oriented
+    """ build sheet row by row """
+    rowIndex = 1
+    for name, source in Source.objectsDic.items():
+        worksheet.write(rowIndex, 0, name)
+        worksheet.write(rowIndex, 1, source.station132)
+        worksheet.write(rowIndex, 2, source.length)
+        worksheet.write(rowIndex, 3, source.number)
+        worksheet.write(rowIndex, 4, source.load)
+        worksheet.write(rowIndex, 5, source.volts)
+        rowIndex += 1
+    workbook.close() # finally save the excel file
 
 """
 Functionality:
