@@ -45,11 +45,9 @@ CHECK_MARK = u'\u2713' # This constant is used by the tk interface for displayin
 Global variables:
 These variables are updated in the functions, but they must be declared as global at the begining of functions
 """
-feedFrame = None # contains the frame read from feeders excel
-transFrame = None # contains the frame read from transformers excel
-loadFrame = None # contains the frame read from load excel
-sourceFrame = None # contains the frame read from source excel
-userMessage = None # contains message displayed 
+userMessage = None # contains message displayed
+loadMessage11K = None # message indicates if feeder (11 KV) is loaded or not
+loadMessage33K = None # message indicates if source (33 KV) is loaded or not
 feederFlag = False # will be true if the the feeder file uploaded and processed successfully
 transFlag = False # will be true if the the transformers file uploaded and processed successfully
 loadFlag = False # will be true if the the loads file uploaded and processed successfully
@@ -130,13 +128,14 @@ Return:
     nothing!
 """
 def import_feeders():
+    """ include the global variables related to feeder, if not included, they can't be modified inside the function """
+    global feederFlag
+    global loadMessage11K
+    global userMessage
     """ if current date exceeded the expiry date, the program will show error message and stops working """
     if not validate_date():
         userMessage.configure(text="هنالك خطأ في البرنامج, اتصل بالمصصم على الرقم 07701791983 ", fg="red")
         return
-    """ include the global variables related to feeder, if not included, they can't be modified inside the function """
-    global feedFrame
-    global feederFlag
     """ Create constant variables instead of using the dictionary, make it cleaner and also easier to maintain in the future. """
     FEEDER_FEEDER = FEEDER_NAMES["FEEDER"]
     FEEDER_STATION = FEEDER_NAMES["STATION"]
@@ -152,6 +151,7 @@ def import_feeders():
     except:
         feederFlag = False
         userMessage.configure(text="لم يتم اختيار ملف المغذيات", fg="red") # Display failure message to user
+        loadMessage11K.configure(text="X", fg="red")
         return
     columnsHeaders = feedFrame.columns.tolist()  # Create a list contains all column header of the excel sheet
     """ Validate the headers of the excel sheet """
@@ -189,14 +189,16 @@ def import_feeders():
                     feeder.cableLength = round(row[FEEDER_LENGTH],2) # keep only two digits after the dot
                 else:
                     print(f"Feeder {row[FEEDER_FEEDER]} has ({row[FEEDER_TYPE]}) type field")
+        loadMessage11K.configure(text=f"{CHECK_MARK}", fg="green")
         userMessage.configure(text=f"تمت معالجة ملف المغذيات {CHECK_MARK}", fg="green") # Display success message to user
         feederFlag = True  # data can be processed by the feeder processing functions
     except:
+        loadMessage11K.configure(text="X", fg="red")
         userMessage.configure(text="حدث خطأ اثناء معالجة بيانات ملف المغذيات", fg="red") # Display failure message to user
         feederFlag = False # data will not be processed by the feeder processing functions
     return
 
-""""
+"""
 Functionality: 
     Read data from transformers excel file row by row, looks for transformers data of each existing feeder (in Feeder class)
     only the data of transformers with status 'good' will be added, others will be neglected
@@ -204,13 +206,14 @@ Return:
     nothing!
 """
 def import_transformers():
+    """ include the global variables related to transformers, if not included, they can't be modified inside the function """
+    global transFlag
+    global loadMessageTrans
+    global userMessage
     """ if current date exceeded the expiry date, the program will show error message and stops working """
     if not validate_date():
         userMessage.configure(text="هنالك خطأ في البرنامج, اتصل بالمصصم على الرقم 07701791983 ", fg="red")
         return
-    """ include the global variables related to feeder, if not included, they can't be modified inside the function """
-    global transFrame
-    global transFlag
     """ Create constant variables instead of using the dictionary, make it cleaner and also easier to maintain in the future. """
     TRANS_FEEDER = TRANS_NAMES["FEEDER"]
     TRANS_SIZE = TRANS_NAMES["SIZE"]
@@ -223,11 +226,12 @@ def import_transformers():
     except:
         userMessage.configure(text="لم يتم تحميل ملف المحولات", fg="red")
         transFlag = False
+        loadMessageTrans.configure(text="X", fg="red")
         return
     headers = transFrame.columns.tolist() # Create a list contains all column header of the excel sheet
     """ Validate the headers of the excel sheet """
     if not validate_columns(TRANS_NAMES,headers):
-        userMessage.configure(text="هنالك عدم مطابقة في عناوين الاعمدة في ملف المحولات", fg="red")
+        userMessage.configure(text="هنالك عدم مطابقة في عناوين ملف المحولات", fg="red")
         transFlag = False
         return
     """ 
@@ -253,14 +257,32 @@ def import_transformers():
                     else:
                         if transType in ['indoor', 'outdoor', 'kiosk']:
                             feeder.trans[transType]['other'] += 1
-        userMessage.configure(text=f"تمت معالجة ملف المحولات {CHECK_MARK}", fg="green") # user success message
+        loadMessageTrans.configure(text=f"{CHECK_MARK}", fg="green")
+        userMessage.configure(text=f"تمت معالجة ملف المحولات{CHECK_MARK}", fg="green") # user success message
         transFlag = True # data can be processed by the feeder processing functions
     except:
-        userMessage.configure(text="حدث خطأ اثناء معالجة بيانات ملف المحولات", fg="red") # user failure message
+        loadMessageTrans.configure(text="X", fg="red")
+        userMessage.configure(text="حدث خطأ اثناء معالجة ملف المحولات", fg="red") # user failure message
         transFlag = False # data will not be processed by the feeder processing functions
     return
 
+""""
+Functionality: 
+    Read data from sources (33 KV) excel file row by row, looks for sources (33 KV) data and stores the result in Source Class  
+    only the data of sources with status 'good' and 'بالعمل' will be added, others will be neglected
+Return:
+    nothing!
+"""
 def import_sources():
+    """ include the global variables related to transformers, if not included, they can't be modified inside the function """
+    global sourceFlag
+    global loadMessage33K
+    global userMessage
+    """ if current date exceeded the expiry date, the program will show error message and stops working """
+    if not validate_date():
+        userMessage.configure(text="هنالك خطأ في البرنامج, اتصل بالمصصم على الرقم 07701791983 ", fg="red")
+        return
+    """ Create constant variables instead of using the dictionary, make it cleaner and also easier to maintain in the future. """    
     NAME = SOURCE_NAMES["NAME"]
     STATION_33 = SOURCE_NAMES["STATION_33"]
     STATION_132 = SOURCE_NAMES["STATION_132"]
@@ -269,69 +291,258 @@ def import_sources():
     LENGTH = SOURCE_NAMES["LENGTH"]
     NUMBER = SOURCE_NAMES["NUMBER"]
     CITYSIDE = SOURCE_NAMES["CITYSIDE"]
-    filename = filedialog.askopenfilename(initialdir = "/",title = "اختر ملف المحولات",filetypes = (("Excel files","*.xls"),("all files","*.*")))
-    transFrame = pandas.read_excel(filename,sheet_name=0) # create panda frame by reading excel file
-    for index, row in transFrame.iterrows():
-        if row[STATUS] == "good" and row[OPERATION] == "بالعمل":
-            sourceName = str(row[NAME]).strip() # remove leading spaces from the source name
-            """ 
-            check if the source was previously read, 
-            if yes, then the data will be read and stored in the same source, 
-            if not, a new feeder will be created, and then data stored in it 
-            """
-            source = Source.objectsDic.get(sourceName, None)
-            if source is None: # If source is not previously read from another row in the sheet
-                source = Source(sourceName)
-                source.number = row[NUMBER]
-                citySide = row[CITYSIDE]
-                station33Name = row[STATION_33]
-                station = Station11K.stationsDic.get(station33Name, None)
-                if station is None:
-                    station = Station11K(station33Name, citySide)
-                station.addSource(source)
-                source.station132 = row[STATION_132]
-                source.length = round(row[LENGTH],2)
+    try:
+        filename = filedialog.askopenfilename(initialdir = "/",title = "اختر ملف المصادر",filetypes = (("Excel files","*.xls"),("all files","*.*")))
+        sourceFrame = pandas.read_excel(filename,sheet_name=0) # create panda frame by reading excel file
+    except:
+        userMessage.configure(text="لم يتم تحميل ملف المصادر", fg="red")
+        sourceFlag = False
+        loadMessage33K.configure(text="X", fg="red")
+        return
+    headers = sourceFrame.columns.tolist() # Create a list contains all column header of the excel sheet
+    """ Validate the headers of the excel sheet """
+    if not validate_columns(SOURCE_NAMES,headers):
+        userMessage.configure(text="هنالك عدم مطابقة في عناوين ملف المصادر", fg="red")
+        transFlag = False
+        return
+    """ 
+    Read the excel sheet (stored in pandas frame) row by row, and store result in Source class objects
+    rows will be neglected if the status is not (good) or not operational 
+    """
+    try:
+        for index, row in sourceFrame.iterrows():
+            if row[STATUS] == "good" and row[OPERATION] == "بالعمل":
+                sourceName = str(row[NAME]).strip() # remove leading spaces from the source name
+                """ 
+                check if the source was previously read, 
+                if yes, then the data will be read and stored in the same source, 
+                if not, a new feeder will be created, and then data stored in it 
+                """
+                source = Source.objectsDic.get(sourceName, None)
+                if source is None: # If source is not previously read from another row in the sheet
+                    source = Source(sourceName)
+                    source.number = row[NUMBER]
+                    citySide = row[CITYSIDE]
+                    station33Name = row[STATION_33]
+                    station = Station11K.stationsDic.get(station33Name, None)
+                    if station is None:
+                        station = Station11K(station33Name, citySide)
+                    station.addSource(source)
+                    source.station132 = row[STATION_132]
+                    source.length = round(row[LENGTH],2)
+        loadMessage33K.configure(text=f"{CHECK_MARK}", fg="green")
+        userMessage.configure(text=f"تمت معالجة ملف المصادر {CHECK_MARK}", fg="green") # user success message
+        sourceFlag = True # data can be processed by the feeder processing functions
+    except:
+        loadMessage33K.configure(text="X", fg="red")
+        userMessage.configure(text="حدث خطأ اثناء معالجة ملف المصادر", fg="red") # user failure message
+        sourceFlag = False # data will not be processed by the feeder processing functions
 
+""""
+Functionality: 
+    Read data from loads excel file row by row, looks for loads data of each existing feeder and sources (in Feeder and Source classes)
+Return:
+    nothing!
+"""
 def import_loads():
+    """ include the global variables related to transformers, if not included, they can't be modified inside the function """
+    global loadFlag
+    global loadMessageLoads # this message to indicate if the file is properly loaded
+    global userMessage
+    """ if current date exceeded the expiry date, the program will show error message and stops working """
+    if not validate_date():
+        userMessage.configure(text="هنالك خطأ في البرنامج, اتصل بالمصصم على الرقم 07701791983 ", fg="red")
+        return
+    """ Create constant variables instead of using the dictionary, make it cleaner and also easier to maintain in the future. """  
     LOAD = LOAD_NAMES["LOAD"]
     VOLTS = LOAD_NAMES["VOLTS"]
     NAME = LOAD_NAMES["FEEDER"]
-    filename = filedialog.askopenfilename(initialdir = "/",title = "اختر ملف المحولات",filetypes = (("Excel files","*.xls"),("all files","*.*")))
-    transFrame = pandas.read_excel(filename,sheet_name=0) # Create panda fram  reading excel file
-    for index, row in transFrame.iterrows():
-        name = str(row[NAME]).strip() # remove leading spaces from the feeder name
-        if row[VOLTS] == "11 KV":
-            feeder = Feeder.objectsDic.get(name, None) # check if the feeder already exist in the feeders list
-            """ if feeder exist, add transformers data to it, if not, ignore it. """
-            if feeder is not None:
-                feeder.load = row[LOAD]
-        elif row[VOLTS] == "33 KV":
-            source = Source.objectsDic.get(name, None) # check if the feeder already exist in the feeders list
-            """ if feeder exist, add transformers data to it, if not, ignore it. """
-            if source is not None:
-                source.load = row[LOAD]
-        else:
-            print(f"Feeder {row[NAME]} has wrong voltage field")
-
-def export_sources_report():
-    filename = filedialog.asksaveasfilename(filetypes=(("Excel files", "*.xlsx"),("All files", "*.*") ))
-    if filename is None: # asksaveasfile return `None` if dialog closed with "cancel".
+    try:
+        filename = filedialog.askopenfilename(initialdir = "/",title = "اختر ملف الاحمال",filetypes = (("Excel files","*.xls"),("all files","*.*")))
+        loadFrame = pandas.read_excel(filename,sheet_name=0) # Create panda fram  reading excel file
+    except:
+        userMessage.configure(text="لم يتم تحميل ملف الاحمال", fg="red")
+        loadFlag = False
+        loadMessageLoads.configure(text="X", fg="red")
         return
-    """ create excel file workbook, and a worksheet, and customize the worksheet """
-    workbook = xlsxwriter.Workbook(filename + ".xlsx")
-    worksheet = workbook.add_worksheet()
-    worksheet.right_to_left() # make it arabic oriented
-    """ build sheet row by row """
-    rowIndex = 1
-    for name, source in Source.objectsDic.items():
-        worksheet.write(rowIndex, 0, name)
-        worksheet.write(rowIndex, 1, source.station132)
-        worksheet.write(rowIndex, 2, source.length)
-        worksheet.write(rowIndex, 3, source.number)
-        worksheet.write(rowIndex, 4, source.load)
-        worksheet.write(rowIndex, 5, source.volts)
-        rowIndex += 1
-    workbook.close() # finally save the excel file
+    headers = loadFrame.columns.tolist() # Create a list contains all column header of the excel sheet
+    """ Validate the headers of the excel sheet """
+    if not validate_columns(LOAD_NAMES, headers):
+        userMessage.configure(text="هنالك عدم مطابقة في عناوين ملف الاحمال", fg="red")
+        transFlag = False
+        return
+    """ 
+    Read the excel sheet (stored in pandas frame) row by row, and store the loads in Source and Feeder class objects
+    """
+    try:
+        for index, row in loadFrame.iterrows():
+            name = str(row[NAME]).strip() # remove leading spaces from the feeder name
+            if row[VOLTS] == "11 KV":
+                feeder = Feeder.objectsDic.get(name, None) # check if the feeder already exist in the feeders list
+                """ if feeder exist, add transformers data to it, if not, ignore it. """
+                if feeder is not None:
+                    feeder.load = row[LOAD]
+            elif row[VOLTS] == "33 KV":
+                source = Source.objectsDic.get(name, None) # check if the feeder already exist in the feeders list
+                """ if feeder exist, add transformers data to it, if not, ignore it. """
+                if source is not None:
+                    source.load = row[LOAD]
+            else:
+                print(f"Feeder {row[NAME]} has wrong voltage field")
+        loadMessageLoads.configure(text=f"{CHECK_MARK}", fg="green")
+        userMessage.configure(text=f"تمت معالجة ملف الاحمال {CHECK_MARK}", fg="green") # user success message
+        loadFlag = True # data can be processed by the feeder processing functions
+    except:
+        loadMessageLoads.configure(text="X", fg="red")
+        userMessage.configure(text="حدث خطأ اثناء تحميل ملف الاحمال", fg="red") # user failure message
+        loadFlag = False # data will not be processed by the feeder processing functions
+
+"""
+Functionality:
+    if 4 excel files of feeders, transformers, sources and loads are uploaded, and processed properly, 
+    this method will create an excel file, and puts in it all the data required for the sources report.
+Returns:
+    Nothing !
+"""
+def export_sources_report():
+    global userMessage
+    """ if current date exceeded the expiry date, the program will show error message and stops working """
+    if not validate_date():
+        userMessage.configure(text="هنالك خطأ في البرنامج, اتصل بالمصصم على الرقم 07701791983 ", fg="red")
+        return
+    """
+    First check whether the two excel files were uploaded and processed properly,
+    if not, the method will stop and ask user to upload and process the proper files 
+    """
+    if not feederFlag or not transFlag or not sourceFlag or not loadFlag:
+        userMessage.configure(text="تأكد من تحميل الملفات بصورة صحيحة قبل محاولة تصدير التقرير", fg="red")
+        return
+    try:
+        """ get a file name from user browsing box """
+        filename = filedialog.asksaveasfilename(filetypes=(("Excel files", "*.xlsx"),("All files", "*.*") ))
+        """if the user didn't specify a path, an error message will be displayed"""
+        if filename is None or filename=="":
+            userMessage.configure(text="لم يتم تحديد مسار ملف تقرير المصادر", fg="red")
+            return
+        """ create excel file workbook, and a worksheet, and customize the worksheet """
+        workbook = xlsxwriter.Workbook(filename + ".xlsx")
+        worksheet = workbook.add_worksheet()
+        worksheet.right_to_left() # make it arabic oriented
+        worksheet.set_zoom(70) # the zoom will be 70%
+        """ 
+        Create cell style per each type of cells
+        style (format) will be added per cell, because I found it eaiser to perform in XlsxWriter
+        """
+        titleCellFormat = workbook.add_format({'bold': True, 'font_size':14, 'align': 'center', 'valign':'vcenter', 'border':True, 'pattern':1, 'bg_color':'#d3d3d3'})
+        seperatorCellFormat = workbook.add_format({'bold': True, 'font_size':14, 'align': 'center', 'valign':'vcenter', 'border':True, 'pattern':1, 'bg_color':'red'})
+        logoCellFormat = workbook.add_format({'bold': True, 'font_size':18, 'align': 'center', 'valign':'vcenter', 'border':True})
+        genericCellFormat = workbook.add_format({'align': 'center', 'valign':'vcenter', 'border':True})
+        sumCellFormat = workbook.add_format({'bold': True, 'font_size':14, 'align': 'center', 'valign':'vcenter', 'border':True})
+        """ set the width of columns """
+        worksheet.set_column("A:A",18)
+        worksheet.set_column("B:B",12)        
+        worksheet.set_column("C:C",20)
+        worksheet.set_column("D:F",12)
+        worksheet.set_column("Y:Y",15)
+        """
+        Build title and log, which will be first 4 rows
+        """
+        """ 1st row for logo image, but I didn't load the image due to problem with pyinstaller --onefile """
+        worksheet.merge_range("A1:Y1", "", genericCellFormat) 
+        worksheet.set_row(0,210)
+        worksheet.insert_image('A1', 'images\ministry.png', {'x_scale': 1.451, 'y_scale': 1.451})
+        """ 2nd row for department title """
+        worksheet.merge_range("A2:Y2", "مديرية توزيع كهرباء مركز نينوى", logoCellFormat)
+        worksheet.set_row(1,40)
+        """ 3rd and 4th rows for columns titles """
+        worksheet.set_row(2,25)
+        worksheet.set_row(3,25)
+        for cellRange, text in (["A3:A4","اسم المحطة"],["B3:B4","جانب المدينة"],["C3:C4","اسم المغذي"]):
+            worksheet.merge_range(cellRange, text, titleCellFormat)
+        worksheet.merge_range("D3:F3", "اطوال المغذيات - بالمتر", titleCellFormat)
+        for cellRange, text in (["D4","ارضي"],["E4","هوائي"],["F4","الكلي"]):
+            worksheet.write(cellRange, text, titleCellFormat)
+        titleColumnIndex = 6 # transformers' columns titles start at the 7th column (first 6 columns taken for station, city side, feeder length, etc.)
+        for cellRange, text in (["G3:L3","محولات صندوقية"],["M3:R3","غرف محولات"],["S3:X3","محولات هوائية"]):
+            worksheet.merge_range(cellRange, text, titleCellFormat)
+            for size in [100, 250, 400, 630, 1000, "اخرى"]:
+                worksheet.write(3, titleColumnIndex, size, titleCellFormat)
+                titleColumnIndex += 1
+        worksheet.merge_range("Y3:Y4","مجموع المحولات", titleCellFormat)
+        """ 
+        build data cells, loop through station, and put its feeders as rows.
+        we need two pointers, a pointer to the first row in the station, and point to the end row of the station, 
+        they will be used to (1) put the station name, and city side in merged cells their height equal to the number of rows in that station
+        and (2) know where the second station starts.
+        """
+        startRowIndex = 4 # starts at row number 5, because first 4 rows were taken for image, and titles
+        endRowIndex = 4 # before each new station, start and end pointers should be pointer at same row
+        """ 
+        initiate variables used to sum the data needed at the end of the sheet 
+        these will be updated when looping through stations and feeders
+        """
+        totalFeeders = 0
+        totalCableLength = 0
+        totalOverLength = 0
+        totalCombinedLength = 0
+        totalTransTypes = {
+                "kiosk": {"100":0, "250":0, "400":0, "630":0, "1000":0, "other":0},
+                "indoor": {"100":0, "250":0, "400":0, "630":0, "1000":0, "other":0},
+                "outdoor": {"100":0, "250":0, "400":0, "630":0, "1000":0, "other":0}
+                }
+        grandTransSum = 0 # this is the summation of all transformers in all feeders
+        """ loop through feeders for each station """
+        for name, station in Station11K.stationsDic.items():
+            feedersList = station.feedersList # can't use the sort function on the list if I don't store it in a variable first
+            feedersList.sort(key=lambda x: x.number, reverse=False) # sorting feeders inside a station according to their numbers
+            columnIndex = 2 # first two columns are taken for station name, and city side
+            for feeder in feedersList:
+                for text in (feeder.name, feeder.cableLength, feeder.overLength, feeder.totalLength()):
+                    worksheet.write(endRowIndex, columnIndex, text, genericCellFormat)
+                    columnIndex += 1
+                sumTransRow = 0 # sum the total transformers (all types) in each feeder (i.e. stations in each row)
+                colors = {'kiosk':'#fef200', 'indoor':'#75d86a', 'outdoor':'#4dc3ea'} # coloring each type of stations
+                for shape in ['kiosk', 'indoor', 'outdoor']:
+                    color = colors[shape] # when put colors[shape] in the format directly, I faced error in the program, so I put it first in variable then, used it
+                    """ I can't put below fromat at the begining of functions as other formats, because it useds the color variable, which is generated inside this loop"""
+                    transCellFormat = workbook.add_format({'align': 'center', 'valign':'vcenter', 'border':True, 'pattern':1, 'bg_color':color}) 
+                    for size in ['100', '250', '400', '630', '1000', 'other']:
+                        sumTransType = feeder.trans[shape][size] # the sumation of each type of transformer in one feeder
+                        worksheet.write(endRowIndex, columnIndex, sumTransType, transCellFormat)
+                        columnIndex += 1
+                        sumTransRow += sumTransType # add the transformers of specific type to the sumation of transformers in the current feeder
+                        totalTransTypes[shape][size] += sumTransType # add the transformers of specific type to the total transformers of this type (in all feeders)
+                worksheet.write(endRowIndex, columnIndex, sumTransRow, genericCellFormat)
+                """ update the total variables """
+                totalFeeders += 1
+                totalCableLength += feeder.cableLength
+                totalOverLength += feeder.overLength
+                columnIndex = 2 # reset column index for each new feeder
+                endRowIndex += 1 # end row index refer to next empty row
+            worksheet.merge_range(startRowIndex,0,endRowIndex-1,0, name, genericCellFormat) # add the station in the first column, with height equal all feeder rows
+            worksheet.merge_range(startRowIndex,1,endRowIndex-1,1, station.citySide, genericCellFormat) # add the city side in the first column, with height equal all feeder rows           
+            worksheet.merge_range(endRowIndex,0,endRowIndex,24, "", seperatorCellFormat) # create an empty row, works as separation between stations
+            endRowIndex += 1 # increase the row pointer to point to the next row after the empty one added.
+            startRowIndex = endRowIndex # At the end of each new loop, the row start and end indexes should be equal
+        """ finally, add the sumation row at the bottom of the sheet """
+        columnIndex = 0
+        totalCombinedLength = totalCableLength + totalOverLength
+        for text in ["المجموع الكلي", "", totalFeeders, totalCableLength, totalOverLength, totalCombinedLength]:
+            worksheet.write(endRowIndex, columnIndex, text, sumCellFormat)
+            columnIndex += 1
+        for shape in ['kiosk', 'indoor', 'outdoor']:
+            for size in ['100', '250', '400', '630', '1000', 'other']:
+                totalTransCol = totalTransTypes[shape][size]
+                worksheet.write(endRowIndex, columnIndex, totalTransCol, sumCellFormat)
+                grandTransSum += totalTransCol
+                columnIndex += 1
+        worksheet.write(endRowIndex, 24, grandTransSum, sumCellFormat) 
+        worksheet.set_row(endRowIndex, 40) # set the height of row, I couldn't do at the beginning with other formats becuase it uses a variable the its value couldn't be known at the beginning
+        workbook.close() # finally save the excel file
+        userMessage.configure(text=f"تم تصدير تقريرالمصادر {CHECK_MARK}", fg="green") # user success message
+    except:
+        userMessage.configure(text="حدث خطأ اثناء تحميل تقرير المصادر", fg="red") # user message if any thing went wrong during executing the function
+    return
 
 """
 Functionality:
@@ -341,6 +552,7 @@ Returns:
     Nothing !
 """
 def export_ministery_report():
+    global userMessage
     """ if current date exceeded the expiry date, the program will show error message and stops working """
     if not validate_date():
         userMessage.configure(text="هنالك خطأ في البرنامج, اتصل بالمصصم على الرقم 07701791983 ", fg="red")
@@ -355,7 +567,9 @@ def export_ministery_report():
     try:
         """ get a file name from user browsing box """
         filename = filedialog.asksaveasfilename(filetypes=(("Excel files", "*.xlsx"),("All files", "*.*") ))
-        if filename is None: # asksaveasfile return `None` if dialog closed with "cancel".
+        """if the user didn't specify a path, an error message will be displayed"""
+        if filename is None or filename=="":
+            userMessage.configure(text="لم يتم تحديد مسار ملف الوزارة", fg="red")
             return
         """ create excel file workbook, and a worksheet, and customize the worksheet """
         workbook = xlsxwriter.Workbook(filename + ".xlsx")
@@ -485,6 +699,7 @@ Returns:
     Nothing !
 """
 def export_transformers_report():
+    global userMessage
     """ if current date exceeded the expiry date, the program will show error message and stops working """
     if not validate_date():
         userMessage.configure(text="هنالك خطأ في البرنامج, اتصل بالمصصم على الرقم 07701791983 ", fg="red")
@@ -499,7 +714,9 @@ def export_transformers_report():
     try:
         """ get a file name from user browsing box """
         filename = filedialog.asksaveasfilename(filetypes=(("Excel files", "*.xlsx"),("All files", "*.*") ))
-        if filename is None: # asksaveasfile return `None` if dialog closed with "cancel".
+        """if the user didn't specify a path, an error message will be displayed"""
+        if filename is None or filename=="":
+            userMessage.configure(text="لم يتم تحديد مسار تصدير ملف المحولات", fg="red") 
             return
         """ create excel file workbook, and a worksheet, and customize the worksheet """
         workbook = xlsxwriter.Workbook(filename + ".xlsx")
@@ -557,7 +774,13 @@ return:
     Nothing
 """
 def main():
+    """ messages accessed in other parts of the program"""
     global userMessage
+    global loadMessage11K
+    global loadMessage33K
+    global loadMessageLoads
+    global loadMessageTrans
+    """ constructing the GUI """
     window = tkinter.Tk()
     window.title("GIS Reports V1.0")
     window.geometry("900x700")
@@ -578,17 +801,33 @@ def main():
     """ left subframe """
     leftSubFrame = Frame(importGroup)
     leftSubFrame.pack(side=LEFT, padx=5, pady=5)
-    rightSubFrame = Frame(importGroup)
-    feeder33Button = Button(leftSubFrame, text="   مصادر 33 كف   ", image = openImage, compound = 'right', command=import_sources, cursor="hand2", font=("Helvetica", 14))
-    feeder11Button = Button(leftSubFrame, text="   مغذيات 11 كف   ", image = openImage, compound = 'right', command=import_feeders, cursor="hand2", font=("Helvetica", 14))
-    feeder11Button.pack(padx=10, pady=5, ipadx=15, ipady=5)
-    feeder33Button.pack(padx=10, pady=5, ipadx=15, ipady=5)
+    group33K = Frame(leftSubFrame)
+    group33K.pack()
+    loadMessage33K = Label(group33K, text="X", fg="red", font=("Helvetica", 16))
+    loadMessage33K.pack(side=LEFT) 
+    feeder33Button = Button(group33K, text="   مصادر 33 كف   ", image = openImage, compound = 'right', command=import_sources, cursor="hand2", font=("Helvetica", 14))
+    feeder33Button.pack(side=RIGHT, padx=10, pady=5, ipadx=15, ipady=5)
+    groupLoad = Frame(leftSubFrame)
+    groupLoad.pack()
+    loadMessageLoads = Label(groupLoad, text="X", fg="red", font=("Helvetica", 16))
+    loadMessageLoads.pack(side=LEFT) 
+    loadsButton = Button(groupLoad, text="    جدول احمال      ", image = openImage, compound = 'right', command=import_loads, cursor="hand2", font=("Helvetica", 14))
+    loadsButton.pack(side=RIGHT, padx=10, pady=5, ipadx=15, ipady=5)
     """ right subframe """
+    rightSubFrame = Frame(importGroup)
     rightSubFrame.pack(side=RIGHT, padx=5, pady=5)
-    loadsButton = Button(rightSubFrame, text="     جدول احمال        ", image = openImage, compound = 'right', command=import_loads, cursor="hand2", font=("Helvetica", 14))
-    transButton = Button(rightSubFrame, text="   جدول المحولات     ", image = openImage, compound = 'right', command=import_transformers, cursor="hand2", font=("Helvetica", 14))
-    transButton.pack(padx=10, pady=5, ipadx=15, ipady=5)
-    loadsButton.pack(padx=10, pady=5, ipadx=15, ipady=5)
+    group11K = Frame(rightSubFrame)
+    group11K.pack()
+    loadMessage11K = Label(group11K, text="X", fg="red", font=("Helvetica", 16))
+    loadMessage11K.pack(side=LEFT)
+    feeder11Button = Button(group11K, text="   مغذيات 11 كف   ", image = openImage, compound = 'right', command=import_feeders, cursor="hand2", font=("Helvetica", 14))
+    feeder11Button.pack(side=RIGHT, padx=10, pady=5, ipadx=15, ipady=5)
+    groupTrans = Frame(rightSubFrame)
+    groupTrans.pack()
+    loadMessageTrans = Label(groupTrans, text="X", fg="red", font=("Helvetica", 16))
+    loadMessageTrans.pack(side=LEFT)
+    transButton = Button(groupTrans, text="  جدول المحولات    ", image = openImage, compound = 'right', command=import_transformers, cursor="hand2", font=("Helvetica", 14))
+    transButton.pack(sid=RIGHT, padx=10, pady=5, ipadx=15, ipady=5)
     """ save files """
     saveGroup = LabelFrame(window, text="    تصدير النتائج    ", padx=20, pady=10, labelanchor=NE)
     saveGroup.pack(padx=15, pady=15)
