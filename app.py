@@ -190,7 +190,7 @@ def import_feeders():
                 else:
                     print(f"Feeder {row[FEEDER_FEEDER]} has ({row[FEEDER_TYPE]}) type field")
         loadMessage11K.configure(text=f"{CHECK_MARK}", fg="green")
-        userMessage.configure(text=f"تمت معالجة ملف المغذيات {CHECK_MARK}", fg="green") # Display success message to user
+        userMessage.configure(text=f"تمت معالجة ملف المغذيات ", fg="green") # Display success message to user
         feederFlag = True  # data can be processed by the feeder processing functions
     except:
         loadMessage11K.configure(text="X", fg="red")
@@ -258,7 +258,7 @@ def import_transformers():
                         if transType in ['indoor', 'outdoor', 'kiosk']:
                             feeder.trans[transType]['other'] += 1
         loadMessageTrans.configure(text=f"{CHECK_MARK}", fg="green")
-        userMessage.configure(text=f"تمت معالجة ملف المحولات{CHECK_MARK}", fg="green") # user success message
+        userMessage.configure(text=f"تمت معالجة ملف المحولات", fg="green") # user success message
         transFlag = True # data can be processed by the feeder processing functions
     except:
         loadMessageTrans.configure(text="X", fg="red")
@@ -325,13 +325,16 @@ def import_sources():
                     citySide = row[CITYSIDE]
                     station33Name = row[STATION_33]
                     station = Station11K.stationsDic.get(station33Name, None)
-                    if station is None:
-                        station = Station11K(station33Name, citySide)
-                    station.addSource(source)
+                    """ 
+                    if Station33Kv is not already exist, then ignore it, 
+                    This to avoid a problem when station exists without having 11KV feeders
+                    """
+                    if station is not None:
+                        station.addSource(source)
                     source.station132 = row[STATION_132]
                     source.length = round(row[LENGTH],2)
         loadMessage33K.configure(text=f"{CHECK_MARK}", fg="green")
-        userMessage.configure(text=f"تمت معالجة ملف المصادر {CHECK_MARK}", fg="green") # user success message
+        userMessage.configure(text=f"تمت معالجة ملف المصادر ", fg="green") # user success message
         sourceFlag = True # data can be processed by the feeder processing functions
     except:
         loadMessage33K.configure(text="X", fg="red")
@@ -390,7 +393,7 @@ def import_loads():
             else:
                 print(f"Feeder {row[NAME]} has wrong voltage field")
         loadMessageLoads.configure(text=f"{CHECK_MARK}", fg="green")
-        userMessage.configure(text=f"تمت معالجة ملف الاحمال {CHECK_MARK}", fg="green") # user success message
+        userMessage.configure(text=f"تمت معالجة ملف الاحمال ", fg="green") # user success message
         loadFlag = True # data can be processed by the feeder processing functions
     except:
         loadMessageLoads.configure(text="X", fg="red")
@@ -414,7 +417,7 @@ def export_sources_report():
     First check whether the two excel files were uploaded and processed properly,
     if not, the method will stop and ask user to upload and process the proper files 
     """
-    if not feederFlag or not transFlag or not sourceFlag or not loadFlag:
+    if not (feederFlag and transFlag and sourceFlag and loadFlag):
         userMessage.configure(text="تأكد من تحميل الملفات بصورة صحيحة قبل محاولة تصدير التقرير", fg="red")
         return
     try:
@@ -539,7 +542,7 @@ def export_sources_report():
         worksheet.write(endRowIndex, 24, grandTransSum, sumCellFormat) 
         worksheet.set_row(endRowIndex, 40) # set the height of row, I couldn't do at the beginning with other formats becuase it uses a variable the its value couldn't be known at the beginning
         workbook.close() # finally save the excel file
-        userMessage.configure(text=f"تم تصدير تقريرالمصادر {CHECK_MARK}", fg="green") # user success message
+        userMessage.configure(text=f"تم تصدير تقريرالمصادر ", fg="green") # user success message
     except:
         userMessage.configure(text="حدث خطأ اثناء تحميل تقرير المصادر", fg="red") # user message if any thing went wrong during executing the function
     return
@@ -686,7 +689,7 @@ def export_ministery_report():
         worksheet.write(endRowIndex, 24, grandTransSum, sumCellFormat) 
         worksheet.set_row(endRowIndex, 40) # set the height of row, I couldn't do at the beginning with other formats becuase it uses a variable the its value couldn't be known at the beginning
         workbook.close() # finally save the excel file
-        userMessage.configure(text=f"تم تصدير تقرير الوزارة {CHECK_MARK}", fg="green") # user success message
+        userMessage.configure(text=f"تم تصدير تقرير الوزارة ", fg="green") # user success message
     except:
         userMessage.configure(text="حدث خطأ اثناء تصدير تقرير الوزارة", fg="red") # user message if any thing went wrong during executing the function
     return
@@ -751,7 +754,7 @@ def export_transformers_report():
                     worksheet.write(rowIndex, 2, transText[:-2], cellFormat) # Remove last two char (" +") from the transformer text
                     rowIndex += 1
         workbook.close() # finally save the excel file
-        userMessage.configure(text=f"تم تصدير تقرير عدد المحولات {CHECK_MARK}", fg="green") # user success message
+        userMessage.configure(text=f"تم تصدير تقرير عدد المحولات ", fg="green") # user success message
     except:
         userMessage.configure(text="حدث خطأ اثناء تصدير تقرير المحولات", fg="red") # user message if any thing went wrong during executing the function
 
