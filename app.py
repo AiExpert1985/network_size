@@ -442,36 +442,36 @@ def export_sources_report():
         genericCellFormat = workbook.add_format({'align': 'center', 'valign':'vcenter', 'border':True})
         sumCellFormat = workbook.add_format({'bold': True, 'font_size':14, 'align': 'center', 'valign':'vcenter', 'border':True})
         """ set the width of columns """
-        worksheet.set_column("A:A",18)
-        worksheet.set_column("B:B",12)        
-        worksheet.set_column("C:C",20)
-        worksheet.set_column("D:F",12)
-        worksheet.set_column("Y:Y",15)
+        worksheet.set_column("D:D",18)
+        worksheet.set_column("E:E",12)
+        worksheet.set_column("F:F",20)
+        worksheet.set_column("H:J",12)
+        worksheet.set_column("AC:AC",18)
         """
         Build title and log, which will be first 4 rows
         """
         """ 1st row for logo image, but I didn't load the image due to problem with pyinstaller --onefile """
-        worksheet.merge_range("A1:Y1", "", genericCellFormat) 
+        worksheet.merge_range("A1:AC1", "", genericCellFormat) 
         worksheet.set_row(0,210)
         worksheet.insert_image('A1', 'images\ministry.png', {'x_scale': 1.451, 'y_scale': 1.451})
         """ 2nd row for department title """
-        worksheet.merge_range("A2:Y2", "مديرية توزيع كهرباء مركز نينوى", logoCellFormat)
+        worksheet.merge_range("A2:AC2", "مديرية توزيع كهرباء مركز نينوى", logoCellFormat)
         worksheet.set_row(1,40)
         """ 3rd and 4th rows for columns titles """
         worksheet.set_row(2,25)
         worksheet.set_row(3,25)
-        for cellRange, text in (["A3:A4","اسم المحطة"],["B3:B4","جانب المدينة"],["C3:C4","اسم المغذي"]):
+        for cellRange, text in (["A3:A4","محطات 132"],["B3:B4","مصادر 33 كف"],["C3:C4","حمل المصدر"],["D3:D4","محطات 33"],["F3:F4","جانب المدينة"],["F3:F4","مغذيات 11 كف"],["G3:G4","حمل المغذي"]):
             worksheet.merge_range(cellRange, text, titleCellFormat)
-        worksheet.merge_range("D3:F3", "اطوال المغذيات - بالمتر", titleCellFormat)
-        for cellRange, text in (["D4","ارضي"],["E4","هوائي"],["F4","الكلي"]):
+        worksheet.merge_range("H3:J3", "اطوال المغذيات - بالمتر", titleCellFormat)
+        for cellRange, text in (["H4","ارضي"],["I4","هوائي"],["J4","الكلي"]):
             worksheet.write(cellRange, text, titleCellFormat)
-        titleColumnIndex = 6 # transformers' columns titles start at the 7th column (first 6 columns taken for station, city side, feeder length, etc.)
-        for cellRange, text in (["G3:L3","محولات صندوقية"],["M3:R3","غرف محولات"],["S3:X3","محولات هوائية"]):
+        titleColumnIndex = 10 # transformers' columns titles start at the 11th column (first 11 columns taken for station, city side, feeder length, etc.)
+        for cellRange, text in (["K3:P3","محولات صندوقية"],["Q3:V3","غرف محولات"],["W3:AB3","محولات هوائية"]):
             worksheet.merge_range(cellRange, text, titleCellFormat)
             for size in [100, 250, 400, 630, 1000, "اخرى"]:
                 worksheet.write(3, titleColumnIndex, size, titleCellFormat)
                 titleColumnIndex += 1
-        worksheet.merge_range("Y3:Y4","مجموع المحولات", titleCellFormat)
+        worksheet.merge_range("AC3:AC4","مجموع المحولات", titleCellFormat)
         """ 
         build data cells, loop through station, and put its feeders as rows.
         we need two pointers, a pointer to the first row in the station, and point to the end row of the station, 
@@ -498,7 +498,7 @@ def export_sources_report():
         for name, station in Station11K.stationsDic.items():
             feedersList = station.feedersList # can't use the sort function on the list if I don't store it in a variable first
             feedersList.sort(key=lambda x: x.number, reverse=False) # sorting feeders inside a station according to their numbers
-            columnIndex = 2 # first two columns are taken for station name, and city side
+            columnIndex = 5 # first two columns are taken for station name, and city side
             for feeder in feedersList:
                 for text in (feeder.name, feeder.cableLength, feeder.overLength, feeder.totalLength()):
                     worksheet.write(endRowIndex, columnIndex, text, genericCellFormat)
@@ -520,11 +520,13 @@ def export_sources_report():
                 totalFeeders += 1
                 totalCableLength += feeder.cableLength
                 totalOverLength += feeder.overLength
-                columnIndex = 2 # reset column index for each new feeder
+                columnIndex = 5 # reset column index for each new feeder
                 endRowIndex += 1 # end row index refer to next empty row
-            worksheet.merge_range(startRowIndex,0,endRowIndex-1,0, name, genericCellFormat) # add the station in the first column, with height equal all feeder rows
-            worksheet.merge_range(startRowIndex,1,endRowIndex-1,1, station.citySide, genericCellFormat) # add the city side in the first column, with height equal all feeder rows           
-            worksheet.merge_range(endRowIndex,0,endRowIndex,24, "", seperatorCellFormat) # create an empty row, works as separation between stations
+            worksheet.merge_range(startRowIndex,3,endRowIndex-1,3, name, genericCellFormat) # add the station in the first column, with height equal all feeder rows
+            worksheet.merge_range(startRowIndex,4,endRowIndex-1,4, station.citySide, genericCellFormat) # add the city side in the first column, with height equal all feeder rows           
+            
+			""" I reached here at end of 12-Jan"""
+			worksheet.merge_range(endRowIndex,0,endRowIndex,24, "", seperatorCellFormat) # create an empty row, works as separation between stations
             endRowIndex += 1 # increase the row pointer to point to the next row after the empty one added.
             startRowIndex = endRowIndex # At the end of each new loop, the row start and end indexes should be equal
         """ finally, add the sumation row at the bottom of the sheet """
@@ -786,7 +788,7 @@ def main():
     """ constructing the GUI """
     window = tkinter.Tk()
     window.title("GIS Reports V1.0")
-    window.geometry("900x700")
+    window.geometry("1000x800")
     """ GIS logo """
     logoFrame = Frame(window)
     gisLable1 =  Label(logoFrame, text="قسم التخطيط", fg="navy", font=("Helvetica", 20))
@@ -799,7 +801,7 @@ def main():
     logoFrame.pack()
     """ importing files """
     importGroup = LabelFrame(window, text="    تحميل الملفات    ", padx=20, pady=10, labelanchor=NE)
-    importGroup.pack()
+    importGroup.pack(pady=15)
     openImage = PhotoImage(file = r"images\open.png").subsample(5, 5) # create photo and resize it (with subsample)
     """ left subframe """
     leftSubFrame = Frame(importGroup)
@@ -833,7 +835,7 @@ def main():
     transButton.pack(sid=RIGHT, padx=10, pady=5, ipadx=15, ipady=5)
     """ save files """
     saveGroup = LabelFrame(window, text="    تصدير النتائج    ", padx=20, pady=10, labelanchor=NE)
-    saveGroup.pack(padx=15, pady=15)
+    saveGroup.pack(pady=15)
     saveImage = PhotoImage(file = r"images\save.png").subsample(5, 5) # create photo and resize it
     exportMinistry = Button(saveGroup, text="  تقرير الوزارة", image = saveImage, compound = 'left', command=export_ministery_report, cursor="hand2", font=("Helvetica", 14))
     exportTrans = Button(saveGroup, text="  تقرير المحولات", image = saveImage, compound = 'left', command=export_transformers_report, cursor="hand2", font=("Helvetica", 14))
@@ -842,7 +844,7 @@ def main():
     exportMinistry.pack(side=RIGHT, padx=10, pady=10, ipadx=15, ipady=7)
     export33Kv.pack(side=RIGHT, padx=10, pady=10, ipadx=15, ipady=7)
     """ User message """
-    messageGroup = LabelFrame(window, text="    رسائل المستخدم    ", padx=20, pady=10, labelanchor=NE)
+    messageGroup = LabelFrame(window, text="    رسائل المستخدم    ", padx=20, pady=5, labelanchor=NE)
     messageGroup.pack(padx=7, pady=7)
     userMessage = Label(messageGroup, text=" مرحبا بك في برنامج تقارير قسم المعلوماتية ", fg="green", font=("Helvetica", 14))
     userMessage.pack(padx=7, pady=7)
