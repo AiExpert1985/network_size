@@ -79,7 +79,7 @@ class Source:
         self.station132 = ""
         self.length = 0
         self.number = ""
-        self.load = ""
+        self.load = 0
         self.volts = "33 KV"
         Source.objectsDic[name] = self # add the new source to the collection of the class
 
@@ -99,7 +99,7 @@ class Feeder:
                 "indoor": {"100":0, "250":0, "400":0, "630":0, "1000":0, "other":0},
                 "outdoor": {"100":0, "250":0, "400":0, "630":0, "1000":0, "other":0}
                 }
-        self.load = ""
+        self.load = 0
         self.volts = "11 KV"
         Feeder.objectsDic[name] = self
     def totalLength(self):
@@ -213,6 +213,10 @@ def import_transformers():
     """ if current date exceeded the expiry date, the program will show error message and stops working """
     if not validate_date():
         userMessage.configure(text="هنالك خطأ في البرنامج, اتصل بالمصصم على الرقم 07701791983 ", fg="red")
+        return
+    """ transformers file depends on feeders 11 KV file, so the feeder file must be uploaded first"""
+    if not feederFlag:
+        userMessage.configure(text="قم بتحميل جدول مغذيات (11 كف) اولا  ", fg="red")
         return
     """ Create constant variables instead of using the dictionary, make it cleaner and also easier to maintain in the future. """
     TRANS_FEEDER = TRANS_NAMES["FEEDER"]
@@ -356,13 +360,17 @@ def import_loads():
     if not validate_date():
         userMessage.configure(text="هنالك خطأ في البرنامج, اتصل بالمصصم على الرقم 07701791983 ", fg="red")
         return
+    """ load file depends on feeders (11 KV) and sources (33 KV), so the feeders and sources files must be uploaded first"""
+    if not (feederFlag and sourceFlag):
+        userMessage.configure(text="قم بتحميل جداول مغذيات (11 كف) و مصادر (33 كف) اولا ", fg="red")
+        return
     """ Create constant variables instead of using the dictionary, make it cleaner and also easier to maintain in the future. """  
     LOAD = LOAD_NAMES["LOAD"]
     VOLTS = LOAD_NAMES["VOLTS"]
     NAME = LOAD_NAMES["FEEDER"]
     try:
         filename = filedialog.askopenfilename(initialdir = "/",title = "اختر ملف الاحمال",filetypes = (("Excel files","*.xls"),("all files","*.*")))
-        loadFrame = pandas.read_excel(filename,sheet_name=0) # Create panda fram  reading excel file
+        loadFrame = pandas.read_excel(filename, sheet_name=0) # Create panda fram  reading excel file
     except:
         userMessage.configure(text="لم يتم تحميل ملف الاحمال", fg="red")
         loadFlag = False
@@ -377,7 +385,7 @@ def import_loads():
     """ 
     Read the excel sheet (stored in pandas frame) row by row, and store the loads in Source and Feeder class objects
     """
-    try:
+    try:    
         for index, row in loadFrame.iterrows():
             name = str(row[NAME]).strip() # remove leading spaces from the feeder name
             if row[VOLTS] == "11 KV":
@@ -417,18 +425,18 @@ def export_sources_report():
     First check whether the two excel files were uploaded and processed properly,
     if not, the method will stop and ask user to upload and process the proper files 
     """
-    if not (feederFlag and transFlag and sourceFlag and loadFlag):
+    if not (feederFlag and sourceFlag and loadFlag):
         userMessage.configure(text="تأكد من تحميل الملفات بصورة صحيحة قبل محاولة تصدير التقرير", fg="red")
         return
     try:
         """ get a file name from user browsing box """
         filename = filedialog.asksaveasfilename(filetypes=(("Excel files", "*.xlsx"),("All files", "*.*") ))
         """if the user didn't specify a path, an error message will be displayed"""
-        if filename is None or filename=="":
+        if filename is None or filename == "":
             userMessage.configure(text="لم يتم تحديد مسار ملف تقرير المصادر", fg="red")
             return
         """ create excel file workbook, and a worksheet, and customize the worksheet """
-        workbook = xlsxwriter.Workbook(filename + ".xlsx")
+        workbook = xlsxwriter.Workbook(filename + ".xlsx", {'nan_inf_to_errors': True}) #{'nan_inf_to_errors': True} is the option to allow wirte float('nan') into excel cells
         worksheet = workbook.add_worksheet()
         worksheet.right_to_left() # make it arabic oriented
         worksheet.set_zoom(70) # the zoom will be 70%
@@ -442,25 +450,29 @@ def export_sources_report():
         genericCellFormat = workbook.add_format({'align': 'center', 'valign':'vcenter', 'border':True})
         sumCellFormat = workbook.add_format({'bold': True, 'font_size':14, 'align': 'center', 'valign':'vcenter', 'border':True})
         """ set the width of columns """
+        worksheet.set_column("A:A",20)
+        worksheet.set_column("B:B",20)
+        worksheet.set_column("C:C",13)        
         worksheet.set_column("D:D",18)
-        worksheet.set_column("E:E",12)
+        worksheet.set_column("E:E",13)
         worksheet.set_column("F:F",20)
+        worksheet.set_column("G:G",13)
         worksheet.set_column("H:J",12)
-        worksheet.set_column("AC:AC",18)
+        worksheet.set_column("AC:AC",20)
         """
         Build title and log, which will be first 4 rows
         """
         """ 1st row for logo image, but I didn't load the image due to problem with pyinstaller --onefile """
         worksheet.merge_range("A1:AC1", "", genericCellFormat) 
         worksheet.set_row(0,210)
-        worksheet.insert_image('A1', 'images\ministry.png', {'x_scale': 1.451, 'y_scale': 1.451})
+        worksheet.insert_image('A1', 'images\ministry.png', {'x_scale': 1.89, 'y_scale': 1.451})
         """ 2nd row for department title """
         worksheet.merge_range("A2:AC2", "مديرية توزيع كهرباء مركز نينوى", logoCellFormat)
         worksheet.set_row(1,40)
         """ 3rd and 4th rows for columns titles """
         worksheet.set_row(2,25)
         worksheet.set_row(3,25)
-        for cellRange, text in (["A3:A4","محطات 132"],["B3:B4","مصادر 33 كف"],["C3:C4","حمل المصدر"],["D3:D4","محطات 33"],["F3:F4","جانب المدينة"],["F3:F4","مغذيات 11 كف"],["G3:G4","حمل المغذي"]):
+        for cellRange, text in (["A3:A4","محطات 132"],["B3:B4","مصادر 33 كف"],["C3:C4","حمل المصدر"],["D3:D4","محطات 33"],["E3:E4","جانب المدينة"],["F3:F4","مغذيات 11 كف"],["G3:G4","حمل المغذي"]):
             worksheet.merge_range(cellRange, text, titleCellFormat)
         worksheet.merge_range("H3:J3", "اطوال المغذيات - بالمتر", titleCellFormat)
         for cellRange, text in (["H4","ارضي"],["I4","هوائي"],["J4","الكلي"]):
@@ -485,6 +497,7 @@ def export_sources_report():
         these will be updated when looping through stations and feeders
         """
         totalFeeders = 0
+        totalFeederLoads = 0
         totalCableLength = 0
         totalOverLength = 0
         totalCombinedLength = 0
@@ -500,8 +513,8 @@ def export_sources_report():
             feedersList.sort(key=lambda x: x.number, reverse=False) # sorting feeders inside a station according to their numbers
             columnIndex = 5 # first two columns are taken for station name, and city side
             for feeder in feedersList:
-                for text in (feeder.name, feeder.cableLength, feeder.overLength, feeder.totalLength()):
-                    worksheet.write(endRowIndex, columnIndex, text, genericCellFormat)
+                for value in (feeder.name, feeder.load, feeder.cableLength, feeder.overLength, feeder.totalLength()):
+                    worksheet.write(endRowIndex, columnIndex, value, genericCellFormat)
                     columnIndex += 1
                 sumTransRow = 0 # sum the total transformers (all types) in each feeder (i.e. stations in each row)
                 colors = {'kiosk':'#fef200', 'indoor':'#75d86a', 'outdoor':'#4dc3ea'} # coloring each type of stations
@@ -518,21 +531,20 @@ def export_sources_report():
                 worksheet.write(endRowIndex, columnIndex, sumTransRow, genericCellFormat)
                 """ update the total variables """
                 totalFeeders += 1
+                totalFeederLoads += feeder.load
                 totalCableLength += feeder.cableLength
                 totalOverLength += feeder.overLength
                 columnIndex = 5 # reset column index for each new feeder
                 endRowIndex += 1 # end row index refer to next empty row
             worksheet.merge_range(startRowIndex,3,endRowIndex-1,3, name, genericCellFormat) # add the station in the first column, with height equal all feeder rows
             worksheet.merge_range(startRowIndex,4,endRowIndex-1,4, station.citySide, genericCellFormat) # add the city side in the first column, with height equal all feeder rows           
-            
-			""" I reached here at end of 12-Jan"""
-			worksheet.merge_range(endRowIndex,0,endRowIndex,24, "", seperatorCellFormat) # create an empty row, works as separation between stations
+            worksheet.merge_range(endRowIndex,0,endRowIndex,28, "", seperatorCellFormat) # create an empty row, works as separation between stations
             endRowIndex += 1 # increase the row pointer to point to the next row after the empty one added.
             startRowIndex = endRowIndex # At the end of each new loop, the row start and end indexes should be equal
         """ finally, add the sumation row at the bottom of the sheet """
-        columnIndex = 0
+        columnIndex = 3
         totalCombinedLength = totalCableLength + totalOverLength
-        for text in ["المجموع الكلي", "", totalFeeders, totalCableLength, totalOverLength, totalCombinedLength]:
+        for text in ["المجموع الكلي", "", totalFeeders, totalFeederLoads, totalCableLength, totalOverLength, totalCombinedLength]:
             worksheet.write(endRowIndex, columnIndex, text, sumCellFormat)
             columnIndex += 1
         for shape in ['kiosk', 'indoor', 'outdoor']:
@@ -541,7 +553,7 @@ def export_sources_report():
                 worksheet.write(endRowIndex, columnIndex, totalTransCol, sumCellFormat)
                 grandTransSum += totalTransCol
                 columnIndex += 1
-        worksheet.write(endRowIndex, 24, grandTransSum, sumCellFormat) 
+        worksheet.write(endRowIndex, 28, grandTransSum, sumCellFormat) 
         worksheet.set_row(endRowIndex, 40) # set the height of row, I couldn't do at the beginning with other formats becuase it uses a variable the its value couldn't be known at the beginning
         workbook.close() # finally save the excel file
         userMessage.configure(text=f"تم تصدير تقريرالمصادر ", fg="green") # user success message
@@ -577,7 +589,8 @@ def export_ministery_report():
             userMessage.configure(text="لم يتم تحديد مسار ملف الوزارة", fg="red")
             return
         """ create excel file workbook, and a worksheet, and customize the worksheet """
-        workbook = xlsxwriter.Workbook(filename + ".xlsx")
+        workbook = xlsxwriter.Workbook(filename + ".xlsx", {'nan_inf_to_errors': True}) #{'nan_inf_to_errors': True} is the option to allow wirte float('nan') into excel cells
+        worksheet = workbook.add_worksheet()
         worksheet = workbook.add_worksheet()
         worksheet.right_to_left() # make it arabic oriented
         worksheet.set_zoom(70) # the zoom will be 70%
@@ -724,7 +737,8 @@ def export_transformers_report():
             userMessage.configure(text="لم يتم تحديد مسار تصدير ملف المحولات", fg="red") 
             return
         """ create excel file workbook, and a worksheet, and customize the worksheet """
-        workbook = xlsxwriter.Workbook(filename + ".xlsx")
+        workbook = xlsxwriter.Workbook(filename + ".xlsx", {'nan_inf_to_errors': True}) #{'nan_inf_to_errors': True} is the option to allow wirte float('nan') into excel cells
+        worksheet = workbook.add_worksheet()
         worksheet = workbook.add_worksheet()
         worksheet.right_to_left() # make it arabic oriented
         titleFormat = workbook.add_format({'align': 'center', 'valign':'vcenter', 'border':True, 'pattern':1, 'bg_color':'#d3d3d3'})
@@ -839,7 +853,7 @@ def main():
     saveImage = PhotoImage(file = r"images\save.png").subsample(5, 5) # create photo and resize it
     exportMinistry = Button(saveGroup, text="  تقرير الوزارة", image = saveImage, compound = 'left', command=export_ministery_report, cursor="hand2", font=("Helvetica", 14))
     exportTrans = Button(saveGroup, text="  تقرير المحولات", image = saveImage, compound = 'left', command=export_transformers_report, cursor="hand2", font=("Helvetica", 14))
-    export33Kv = Button(saveGroup, text="   تقرير مصادر   ", image = saveImage, compound = 'left', command=export_sources_report, cursor="hand2", font=("Helvetica", 14))
+    export33Kv = Button(saveGroup, text="   تتقرير المصادر  ", image = saveImage, compound = 'left', command=export_sources_report, cursor="hand2", font=("Helvetica", 14))
     exportTrans.pack(side=RIGHT, padx=10, pady=10, ipadx=15, ipady=7)
     exportMinistry.pack(side=RIGHT, padx=10, pady=10, ipadx=15, ipady=7)
     export33Kv.pack(side=RIGHT, padx=10, pady=10, ipadx=15, ipady=7)
