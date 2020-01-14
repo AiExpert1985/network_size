@@ -3,6 +3,7 @@ import xlsxwriter
 from datetime import datetime
 import tkinter
 from tkinter import Frame, Button, PhotoImage, Label, LabelFrame, LEFT, RIGHT, NE, filedialog
+import math
 
 """
 CONSTANTS:
@@ -428,137 +429,153 @@ def export_sources_report():
     if not (feederFlag and sourceFlag and loadFlag):
         userMessage.configure(text="تأكد من تحميل الملفات بصورة صحيحة قبل محاولة تصدير التقرير", fg="red")
         return
-    try:
-        """ get a file name from user browsing box """
-        filename = filedialog.asksaveasfilename(filetypes=(("Excel files", "*.xlsx"),("All files", "*.*") ))
-        """if the user didn't specify a path, an error message will be displayed"""
-        if filename is None or filename == "":
-            userMessage.configure(text="لم يتم تحديد مسار ملف تقرير المصادر", fg="red")
-            return
-        """ create excel file workbook, and a worksheet, and customize the worksheet """
-        workbook = xlsxwriter.Workbook(filename + ".xlsx", {'nan_inf_to_errors': True}) #{'nan_inf_to_errors': True} is the option to allow wirte float('nan') into excel cells
-        worksheet = workbook.add_worksheet()
-        worksheet.right_to_left() # make it arabic oriented
-        worksheet.set_zoom(70) # the zoom will be 70%
-        """ 
-        Create cell style per each type of cells
-        style (format) will be added per cell, because I found it eaiser to perform in XlsxWriter
-        """
-        titleCellFormat = workbook.add_format({'bold': True, 'font_size':14, 'align': 'center', 'valign':'vcenter', 'border':True, 'pattern':1, 'bg_color':'#d3d3d3'})
-        seperatorCellFormat = workbook.add_format({'bold': True, 'font_size':14, 'align': 'center', 'valign':'vcenter', 'border':True, 'pattern':1, 'bg_color':'red'})
-        logoCellFormat = workbook.add_format({'bold': True, 'font_size':18, 'align': 'center', 'valign':'vcenter', 'border':True})
-        genericCellFormat = workbook.add_format({'align': 'center', 'valign':'vcenter', 'border':True})
-        sumCellFormat = workbook.add_format({'bold': True, 'font_size':14, 'align': 'center', 'valign':'vcenter', 'border':True})
-        """ set the width of columns """
-        worksheet.set_column("A:A",20)
-        worksheet.set_column("B:B",20)
-        worksheet.set_column("C:C",13)        
-        worksheet.set_column("D:D",18)
-        worksheet.set_column("E:E",13)
-        worksheet.set_column("F:F",20)
-        worksheet.set_column("G:G",13)
-        worksheet.set_column("H:J",12)
-        worksheet.set_column("AC:AC",20)
-        """
-        Build title and log, which will be first 4 rows
-        """
-        """ 1st row for logo image, but I didn't load the image due to problem with pyinstaller --onefile """
-        worksheet.merge_range("A1:AC1", "", genericCellFormat) 
-        worksheet.set_row(0,210)
-        worksheet.insert_image('A1', 'images\ministry.png', {'x_scale': 1.89, 'y_scale': 1.451})
-        """ 2nd row for department title """
-        worksheet.merge_range("A2:AC2", "مديرية توزيع كهرباء مركز نينوى", logoCellFormat)
-        worksheet.set_row(1,40)
-        """ 3rd and 4th rows for columns titles """
-        worksheet.set_row(2,25)
-        worksheet.set_row(3,25)
-        for cellRange, text in (["A3:A4","محطات 132"],["B3:B4","مصادر 33 كف"],["C3:C4","حمل المصدر"],["D3:D4","محطات 33"],["E3:E4","جانب المدينة"],["F3:F4","مغذيات 11 كف"],["G3:G4","حمل المغذي"]):
-            worksheet.merge_range(cellRange, text, titleCellFormat)
-        worksheet.merge_range("H3:J3", "اطوال المغذيات - بالمتر", titleCellFormat)
-        for cellRange, text in (["H4","ارضي"],["I4","هوائي"],["J4","الكلي"]):
-            worksheet.write(cellRange, text, titleCellFormat)
-        titleColumnIndex = 10 # transformers' columns titles start at the 11th column (first 11 columns taken for station, city side, feeder length, etc.)
-        for cellRange, text in (["K3:P3","محولات صندوقية"],["Q3:V3","غرف محولات"],["W3:AB3","محولات هوائية"]):
-            worksheet.merge_range(cellRange, text, titleCellFormat)
-            for size in [100, 250, 400, 630, 1000, "اخرى"]:
-                worksheet.write(3, titleColumnIndex, size, titleCellFormat)
-                titleColumnIndex += 1
-        worksheet.merge_range("AC3:AC4","مجموع المحولات", titleCellFormat)
-        """ 
-        build data cells, loop through station, and put its feeders as rows.
-        we need two pointers, a pointer to the first row in the station, and point to the end row of the station, 
-        they will be used to (1) put the station name, and city side in merged cells their height equal to the number of rows in that station
-        and (2) know where the second station starts.
-        """
-        startRowIndex = 4 # starts at row number 5, because first 4 rows were taken for image, and titles
-        endRowIndex = 4 # before each new station, start and end pointers should be pointer at same row
-        """ 
-        initiate variables used to sum the data needed at the end of the sheet 
-        these will be updated when looping through stations and feeders
-        """
-        totalFeeders = 0
-        totalFeederLoads = 0
-        totalCableLength = 0
-        totalOverLength = 0
-        totalCombinedLength = 0
-        totalTransTypes = {
-                "kiosk": {"100":0, "250":0, "400":0, "630":0, "1000":0, "other":0},
-                "indoor": {"100":0, "250":0, "400":0, "630":0, "1000":0, "other":0},
-                "outdoor": {"100":0, "250":0, "400":0, "630":0, "1000":0, "other":0}
-                }
-        grandTransSum = 0 # this is the summation of all transformers in all feeders
-        """ loop through feeders for each station """
-        for name, station in Station11K.stationsDic.items():
-            feedersList = station.feedersList # can't use the sort function on the list if I don't store it in a variable first
-            feedersList.sort(key=lambda x: x.number, reverse=False) # sorting feeders inside a station according to their numbers
-            columnIndex = 5 # first two columns are taken for station name, and city side
-            for feeder in feedersList:
-                for value in (feeder.name, feeder.load, feeder.cableLength, feeder.overLength, feeder.totalLength()):
-                    worksheet.write(endRowIndex, columnIndex, value, genericCellFormat)
-                    columnIndex += 1
-                sumTransRow = 0 # sum the total transformers (all types) in each feeder (i.e. stations in each row)
-                colors = {'kiosk':'#fef200', 'indoor':'#75d86a', 'outdoor':'#4dc3ea'} # coloring each type of stations
-                for shape in ['kiosk', 'indoor', 'outdoor']:
-                    color = colors[shape] # when put colors[shape] in the format directly, I faced error in the program, so I put it first in variable then, used it
-                    """ I can't put below fromat at the begining of functions as other formats, because it useds the color variable, which is generated inside this loop"""
-                    transCellFormat = workbook.add_format({'align': 'center', 'valign':'vcenter', 'border':True, 'pattern':1, 'bg_color':color}) 
-                    for size in ['100', '250', '400', '630', '1000', 'other']:
-                        sumTransType = feeder.trans[shape][size] # the sumation of each type of transformer in one feeder
-                        worksheet.write(endRowIndex, columnIndex, sumTransType, transCellFormat)
-                        columnIndex += 1
-                        sumTransRow += sumTransType # add the transformers of specific type to the sumation of transformers in the current feeder
-                        totalTransTypes[shape][size] += sumTransType # add the transformers of specific type to the total transformers of this type (in all feeders)
-                worksheet.write(endRowIndex, columnIndex, sumTransRow, genericCellFormat)
-                """ update the total variables """
-                totalFeeders += 1
-                totalFeederLoads += feeder.load
-                totalCableLength += feeder.cableLength
-                totalOverLength += feeder.overLength
-                columnIndex = 5 # reset column index for each new feeder
-                endRowIndex += 1 # end row index refer to next empty row
-            worksheet.merge_range(startRowIndex,3,endRowIndex-1,3, name, genericCellFormat) # add the station in the first column, with height equal all feeder rows
-            worksheet.merge_range(startRowIndex,4,endRowIndex-1,4, station.citySide, genericCellFormat) # add the city side in the first column, with height equal all feeder rows           
-            worksheet.merge_range(endRowIndex,0,endRowIndex,28, "", seperatorCellFormat) # create an empty row, works as separation between stations
-            endRowIndex += 1 # increase the row pointer to point to the next row after the empty one added.
-            startRowIndex = endRowIndex # At the end of each new loop, the row start and end indexes should be equal
-        """ finally, add the sumation row at the bottom of the sheet """
-        columnIndex = 3
-        totalCombinedLength = totalCableLength + totalOverLength
-        for text in ["المجموع الكلي", "", totalFeeders, totalFeederLoads, totalCableLength, totalOverLength, totalCombinedLength]:
-            worksheet.write(endRowIndex, columnIndex, text, sumCellFormat)
-            columnIndex += 1
-        for shape in ['kiosk', 'indoor', 'outdoor']:
-            for size in ['100', '250', '400', '630', '1000', 'other']:
-                totalTransCol = totalTransTypes[shape][size]
-                worksheet.write(endRowIndex, columnIndex, totalTransCol, sumCellFormat)
-                grandTransSum += totalTransCol
+    # try:
+    """ get a file name from user browsing box """
+    filename = filedialog.asksaveasfilename(filetypes=(("Excel files", "*.xlsx"),("All files", "*.*") ))
+    """if the user didn't specify a path, an error message will be displayed"""
+    if filename is None or filename == "":
+        userMessage.configure(text="لم يتم تحديد مسار ملف تقرير المصادر", fg="red")
+        return
+    """ create excel file workbook, and a worksheet, and customize the worksheet """
+    workbook = xlsxwriter.Workbook(filename + ".xlsx", {'nan_inf_to_errors': True}) #{'nan_inf_to_errors': True} is the option to allow wirte float('nan') into excel cells
+    worksheet = workbook.add_worksheet()
+    worksheet.right_to_left() # make it arabic oriented
+    worksheet.set_zoom(70) # the zoom will be 70%
+    """ 
+    Create cell style per each type of cells
+    style (format) will be added per cell, because I found it eaiser to perform in XlsxWriter
+    """
+    titleCellFormat = workbook.add_format({'bold': True, 'font_size':14, 'align': 'center', 'valign':'vcenter', 'border':True, 'pattern':1, 'bg_color':'#d3d3d3'})
+    seperatorCellFormat = workbook.add_format({'bold': True, 'font_size':14, 'align': 'center', 'valign':'vcenter', 'border':True, 'pattern':1, 'bg_color':'red'})
+    logoCellFormat = workbook.add_format({'bold': True, 'font_size':18, 'align': 'center', 'valign':'vcenter', 'border':True})
+    genericCellFormat = workbook.add_format({'align': 'center', 'valign':'vcenter', 'border':True})
+    sumCellFormat = workbook.add_format({'bold': True, 'font_size':14, 'align': 'center', 'valign':'vcenter', 'border':True})
+    """ set the width of columns """
+    worksheet.set_column("A:A",20)
+    worksheet.set_column("B:B",20)
+    worksheet.set_column("C:C",13)        
+    worksheet.set_column("D:D",18)
+    worksheet.set_column("E:E",13)
+    worksheet.set_column("F:F",20)
+    worksheet.set_column("G:G",13)
+    worksheet.set_column("H:J",12)
+    worksheet.set_column("AC:AC",20)
+    """
+    Build title and log, which will be first 4 rows
+    """
+    """ 1st row for logo image, but I didn't load the image due to problem with pyinstaller --onefile """
+    worksheet.merge_range("A1:AC1", "", genericCellFormat) 
+    worksheet.set_row(0,210)
+    worksheet.insert_image('A1', 'images\ministry.png', {'x_scale': 1.89, 'y_scale': 1.455})
+    """ 2nd row for department title """
+    worksheet.merge_range("A2:AC2", "مديرية توزيع كهرباء مركز نينوى", logoCellFormat)
+    worksheet.set_row(1,40)
+    """ 3rd and 4th rows for columns titles """
+    worksheet.set_row(2,25)
+    worksheet.set_row(3,25)
+    for cellRange, text in (["A3:A4","محطات 132"],["B3:B4","مصادر 33 كف"],["C3:C4","حمل المصدر"],["D3:D4","محطات 33"],["E3:E4","جانب المدينة"],["F3:F4","مغذيات 11 كف"],["G3:G4","حمل المغذي"]):
+        worksheet.merge_range(cellRange, text, titleCellFormat)
+    worksheet.merge_range("H3:J3", "اطوال المغذيات - بالمتر", titleCellFormat)
+    for cellRange, text in (["H4","ارضي"],["I4","هوائي"],["J4","الكلي"]):
+        worksheet.write(cellRange, text, titleCellFormat)
+    titleColumnIndex = 10 # transformers' columns titles start at the 11th column (first 11 columns taken for station, city side, feeder length, etc.)
+    for cellRange, text in (["K3:P3","محولات صندوقية"],["Q3:V3","غرف محولات"],["W3:AB3","محولات هوائية"]):
+        worksheet.merge_range(cellRange, text, titleCellFormat)
+        for size in [100, 250, 400, 630, 1000, "اخرى"]:
+            worksheet.write(3, titleColumnIndex, size, titleCellFormat)
+            titleColumnIndex += 1
+    worksheet.merge_range("AC3:AC4","مجموع المحولات", titleCellFormat)
+    """ 
+    build data cells, loop through station, and put its feeders as rows.
+    we need two pointers, a pointer to the first row in the station, and point to the end row of the station, 
+    they will be used to (1) put the station name, and city side in merged cells their height equal to the number of rows in that station
+    and (2) know where the second station starts.
+    """
+    startRowIndex = 4 # starts at row number 5, because first 4 rows were taken for image, and titles
+    endRowIndex = 4 # before each new station, start and end pointers should be pointer at same row
+    """ 
+    initiate variables used to sum the data needed at the end of the sheet 
+    these will be updated when looping through stations and feeders
+    """
+    totalFeeders = 0
+    totalFeederLoads = 0
+    totalCableLength = 0
+    totalOverLength = 0
+    totalCombinedLength = 0
+    total33Station = 0
+    totalTransTypes = {
+            "kiosk": {"100":0, "250":0, "400":0, "630":0, "1000":0, "other":0},
+            "indoor": {"100":0, "250":0, "400":0, "630":0, "1000":0, "other":0},
+            "outdoor": {"100":0, "250":0, "400":0, "630":0, "1000":0, "other":0}
+            }
+    grandTransSum = 0 # this is the summation of all transformers in all feeders
+    """ loop through feeders for each station """
+    for name, station in Station11K.stationsDic.items():
+        feedersList = station.feedersList # can't use the sort function on the list if I don't store it in a variable first
+        feedersList.sort(key=lambda x: x.number, reverse=False) # sorting feeders inside a station according to their numbers
+        columnIndex = 5 # first two columns are taken for station name, and city side
+        for feeder in feedersList:
+            for value in (feeder.name, feeder.load, feeder.cableLength, feeder.overLength, feeder.totalLength()):
+                worksheet.write(endRowIndex, columnIndex, value, genericCellFormat)
                 columnIndex += 1
-        worksheet.write(endRowIndex, 28, grandTransSum, sumCellFormat) 
-        worksheet.set_row(endRowIndex, 40) # set the height of row, I couldn't do at the beginning with other formats becuase it uses a variable the its value couldn't be known at the beginning
-        workbook.close() # finally save the excel file
-        userMessage.configure(text=f"تم تصدير تقريرالمصادر ", fg="green") # user success message
-    except:
-        userMessage.configure(text="حدث خطأ اثناء تحميل تقرير المصادر", fg="red") # user message if any thing went wrong during executing the function
+            sumTransRow = 0 # sum the total transformers (all types) in each feeder (i.e. stations in each row)
+            colors = {'kiosk':'#fef200', 'indoor':'#75d86a', 'outdoor':'#4dc3ea'} # coloring each type of stations
+            for shape in ['kiosk', 'indoor', 'outdoor']:
+                color = colors[shape] # when put colors[shape] in the format directly, I faced error in the program, so I put it first in variable then, used it
+                """ I can't put below fromat at the begining of functions as other formats, because it useds the color variable, which is generated inside this loop"""
+                transCellFormat = workbook.add_format({'align': 'center', 'valign':'vcenter', 'border':True, 'pattern':1, 'bg_color':color}) 
+                for size in ['100', '250', '400', '630', '1000', 'other']:
+                    sumTransType = feeder.trans[shape][size] # the sumation of each type of transformer in one feeder
+                    worksheet.write(endRowIndex, columnIndex, sumTransType, transCellFormat)
+                    columnIndex += 1
+                    sumTransRow += sumTransType # add the transformers of specific type to the sumation of transformers in the current feeder
+                    totalTransTypes[shape][size] += sumTransType # add the transformers of specific type to the total transformers of this type (in all feeders)
+            worksheet.write(endRowIndex, columnIndex, sumTransRow, genericCellFormat)
+            """ update the total variables """
+            totalFeeders += 1
+            totalFeederLoads += feeder.load
+            totalCableLength += feeder.cableLength
+            totalOverLength += feeder.overLength
+            columnIndex = 5 # reset column index for each new feeder
+            endRowIndex += 1 # end row index refer to next empty row
+        total33Station += 1
+        worksheet.merge_range(startRowIndex,3,endRowIndex-1,3, name, genericCellFormat) # add the station in the first column, with height equal all feeder rows
+        worksheet.merge_range(startRowIndex,4,endRowIndex-1,4, station.citySide, genericCellFormat) # add the city side in the first column, with height equal all feeder rows           
+        worksheet.merge_range(endRowIndex,0,endRowIndex,28, "", seperatorCellFormat) # create an empty row, works as separation between stations
+        endRowIndex += 1 # increase the row pointer to point to the next row after the empty one added.
+        """ adding the sources that feed 33 stations """
+        sourcesNumber = len(station.sourcesList) # number of sources feeding the 33 station
+        feedersNumber = endRowIndex-startRowIndex-1
+        if sourcesNumber > 0: # if number of sources is zero, then it is 132 station, so ignore it.
+            tempStart = startRowIndex
+            tempMergeSize = math.floor((feedersNumber)/sourcesNumber)
+            tempEnd = tempStart + tempMergeSize - 1
+            """ if the number of feeders is odd, then make the first merge one row bigger than other """
+            for source in station.sourcesList:
+                worksheet.merge_range(tempStart,0,tempEnd,0, source.station132, genericCellFormat)
+                worksheet.merge_range(tempStart,1,tempEnd,1, source.name, genericCellFormat)
+                worksheet.merge_range(tempStart,2,tempEnd,2, source.load, genericCellFormat)
+                tempStart = tempEnd + 1
+                tempEnd = tempStart + tempMergeSize -1
+        startRowIndex = endRowIndex # At the end of each new loop, the row start and end indexes should be equal
+    """ finally, add the sumation row at the bottom of the sheet """
+    columnIndex = 3
+    totalCombinedLength = totalCableLength + totalOverLength
+    for text in [total33Station, "", totalFeeders, totalFeederLoads, totalCableLength, totalOverLength, totalCombinedLength]:
+        worksheet.write(endRowIndex, columnIndex, text, sumCellFormat)
+        columnIndex += 1
+    for shape in ['kiosk', 'indoor', 'outdoor']:
+        for size in ['100', '250', '400', '630', '1000', 'other']:
+            totalTransCol = totalTransTypes[shape][size]
+            worksheet.write(endRowIndex, columnIndex, totalTransCol, sumCellFormat)
+            grandTransSum += totalTransCol
+            columnIndex += 1
+    worksheet.write(endRowIndex, 28, grandTransSum, sumCellFormat) 
+    worksheet.set_row(endRowIndex, 40) # set the height of row, I couldn't do at the beginning with other formats becuase it uses a variable the its value couldn't be known at the beginning
+    workbook.close() # finally save the excel file
+    userMessage.configure(text=f"تم تصدير تقريرالمصادر ", fg="green") # user success message
+    # except:
+    #     userMessage.configure(text="حدث خطأ اثناء تحميل تقرير المصادر", fg="red") # user message if any thing went wrong during executing the function
     return
 
 """
@@ -853,7 +870,7 @@ def main():
     saveImage = PhotoImage(file = r"images\save.png").subsample(5, 5) # create photo and resize it
     exportMinistry = Button(saveGroup, text="  تقرير الوزارة", image = saveImage, compound = 'left', command=export_ministery_report, cursor="hand2", font=("Helvetica", 14))
     exportTrans = Button(saveGroup, text="  تقرير المحولات", image = saveImage, compound = 'left', command=export_transformers_report, cursor="hand2", font=("Helvetica", 14))
-    export33Kv = Button(saveGroup, text="   تتقرير المصادر  ", image = saveImage, compound = 'left', command=export_sources_report, cursor="hand2", font=("Helvetica", 14))
+    export33Kv = Button(saveGroup, text="   تقرير المصادر  ", image = saveImage, compound = 'left', command=export_sources_report, cursor="hand2", font=("Helvetica", 14))
     exportTrans.pack(side=RIGHT, padx=10, pady=10, ipadx=15, ipady=7)
     exportMinistry.pack(side=RIGHT, padx=10, pady=10, ipadx=15, ipady=7)
     export33Kv.pack(side=RIGHT, padx=10, pady=10, ipadx=15, ipady=7)
