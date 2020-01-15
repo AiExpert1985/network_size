@@ -135,7 +135,7 @@ def import_feeders():
     global userMessage
     """ if current date exceeded the expiry date, the program will show error message and stops working """
     if not validate_date():
-        userMessage.configure(text="هنالك خطأ في البرنامج, اتصل بالمصصم على الرقم 07701791983 ", fg="red")
+        userMessage.configure(text="حصل خطأ في البرنامج اتصل بالرقم 07701791983 الخاص بالمصمم", fg="red")
         return
     """ Create constant variables instead of using the dictionary, make it cleaner and also easier to maintain in the future. """
     FEEDER_FEEDER = FEEDER_NAMES["FEEDER"]
@@ -213,7 +213,7 @@ def import_transformers():
     global userMessage
     """ if current date exceeded the expiry date, the program will show error message and stops working """
     if not validate_date():
-        userMessage.configure(text="هنالك خطأ في البرنامج, اتصل بالمصصم على الرقم 07701791983 ", fg="red")
+        userMessage.configure(text="حصل خطأ في البرنامج اتصل بالرقم 07701791983 الخاص بالمصمم", fg="red")
         return
     """ transformers file depends on feeders 11 KV file, so the feeder file must be uploaded first"""
     if not feederFlag:
@@ -285,7 +285,7 @@ def import_sources():
     global userMessage
     """ if current date exceeded the expiry date, the program will show error message and stops working """
     if not validate_date():
-        userMessage.configure(text="هنالك خطأ في البرنامج, اتصل بالمصصم على الرقم 07701791983 ", fg="red")
+        userMessage.configure(text="حصل خطأ في البرنامج اتصل بالرقم 07701791983 الخاص بالمصمم", fg="red")
         return
     """ Create constant variables instead of using the dictionary, make it cleaner and also easier to maintain in the future. """    
     NAME = SOURCE_NAMES["NAME"]
@@ -359,7 +359,7 @@ def import_loads():
     global userMessage
     """ if current date exceeded the expiry date, the program will show error message and stops working """
     if not validate_date():
-        userMessage.configure(text="هنالك خطأ في البرنامج, اتصل بالمصصم على الرقم 07701791983 ", fg="red")
+        userMessage.configure(text="حصل خطأ في البرنامج اتصل بالرقم 07701791983 الخاص بالمصمم", fg="red")
         return
     """ load file depends on feeders (11 KV) and sources (33 KV), so the feeders and sources files must be uploaded first"""
     if not (feederFlag and sourceFlag):
@@ -420,7 +420,7 @@ def export_sources_report():
     global userMessage
     """ if current date exceeded the expiry date, the program will show error message and stops working """
     if not validate_date():
-        userMessage.configure(text="هنالك خطأ في البرنامج, اتصل بالمصصم على الرقم 07701791983 ", fg="red")
+        userMessage.configure(text="حصل خطأ في البرنامج اتصل بالرقم 07701791983 الخاص بالمصمم", fg="red")
         return
     """
     First check whether the two excel files were uploaded and processed properly,
@@ -466,7 +466,7 @@ def export_sources_report():
     """ 1st row for logo image, but I didn't load the image due to problem with pyinstaller --onefile """
     worksheet.merge_range("A1:AC1", "", genericCellFormat) 
     worksheet.set_row(0,210)
-    worksheet.insert_image('A1', 'images\ministry.png', {'x_scale': 1.89, 'y_scale': 1.455})
+    worksheet.insert_image('A1', 'images\ministry.png', {'x_scale': 1.9, 'y_scale': 1.55})
     """ 2nd row for department title """
     worksheet.merge_range("A2:AC2", "مديرية توزيع كهرباء مركز نينوى", logoCellFormat)
     worksheet.set_row(1,40)
@@ -503,6 +503,8 @@ def export_sources_report():
     totalOverLength = 0
     totalCombinedLength = 0
     total33Station = 0
+    totalSources = 0
+    totalSourceLoads = 0
     totalTransTypes = {
             "kiosk": {"100":0, "250":0, "400":0, "630":0, "1000":0, "other":0},
             "indoor": {"100":0, "250":0, "400":0, "630":0, "1000":0, "other":0},
@@ -539,7 +541,14 @@ def export_sources_report():
             columnIndex = 5 # reset column index for each new feeder
             endRowIndex += 1 # end row index refer to next empty row
         total33Station += 1
-        worksheet.merge_range(startRowIndex,3,endRowIndex-1,3, name, genericCellFormat) # add the station in the first column, with height equal all feeder rows
+        """ 
+            if the station is 132, then it has no sources, so it will fill all the first 4 columns,
+            (else) if it is a 33 station, then it only will fill the 4th column, because the first three will be used for station 132, source and load
+        """
+        if "132" in name:
+            worksheet.merge_range(startRowIndex,0,endRowIndex-1,3, name, genericCellFormat) # add the station in the first column, with height equal all feeder rows
+        else:
+            worksheet.merge_range(startRowIndex,3,endRowIndex-1,3, name, genericCellFormat) # add the station in the first column, with height equal all feeder rows
         worksheet.merge_range(startRowIndex,4,endRowIndex-1,4, station.citySide, genericCellFormat) # add the city side in the first column, with height equal all feeder rows           
         worksheet.merge_range(endRowIndex,0,endRowIndex,28, "", seperatorCellFormat) # create an empty row, works as separation between stations
         endRowIndex += 1 # increase the row pointer to point to the next row after the empty one added.
@@ -550,6 +559,9 @@ def export_sources_report():
             tempStart = startRowIndex
             tempMergeSize = math.floor((feedersNumber)/sourcesNumber)
             tempEnd = tempStart + tempMergeSize - 1
+            """ if the number of feeders is odd, and the number of sources > 1, then we need to add 1 to avoid having one empty row we diving odd / 2 and taking math floor"""
+            if feedersNumber % 2 == 1 and sourcesNumber > 1:
+                tempEnd += 1
             """ if the number of feeders is odd, then make the first merge one row bigger than other """
             for source in station.sourcesList:
                 worksheet.merge_range(tempStart,0,tempEnd,0, source.station132, genericCellFormat)
@@ -557,11 +569,13 @@ def export_sources_report():
                 worksheet.merge_range(tempStart,2,tempEnd,2, source.load, genericCellFormat)
                 tempStart = tempEnd + 1
                 tempEnd = tempStart + tempMergeSize -1
+                totalSources += 1
+                totalSourceLoads += source.load
         startRowIndex = endRowIndex # At the end of each new loop, the row start and end indexes should be equal
     """ finally, add the sumation row at the bottom of the sheet """
-    columnIndex = 3
+    columnIndex = 0
     totalCombinedLength = totalCableLength + totalOverLength
-    for text in [total33Station, "", totalFeeders, totalFeederLoads, totalCableLength, totalOverLength, totalCombinedLength]:
+    for text in ["المجموع", totalSources, totalSourceLoads, total33Station, "", totalFeeders, totalFeederLoads, totalCableLength, totalOverLength, totalCombinedLength]:
         worksheet.write(endRowIndex, columnIndex, text, sumCellFormat)
         columnIndex += 1
     for shape in ['kiosk', 'indoor', 'outdoor']:
@@ -589,7 +603,7 @@ def export_ministery_report():
     global userMessage
     """ if current date exceeded the expiry date, the program will show error message and stops working """
     if not validate_date():
-        userMessage.configure(text="هنالك خطأ في البرنامج, اتصل بالمصصم على الرقم 07701791983 ", fg="red")
+        userMessage.configure(text="حصل خطأ في البرنامج اتصل بالرقم 07701791983 الخاص بالمصمم", fg="red")
         return
     """
     First check whether the two excel files were uploaded and processed properly,
@@ -607,7 +621,6 @@ def export_ministery_report():
             return
         """ create excel file workbook, and a worksheet, and customize the worksheet """
         workbook = xlsxwriter.Workbook(filename + ".xlsx", {'nan_inf_to_errors': True}) #{'nan_inf_to_errors': True} is the option to allow wirte float('nan') into excel cells
-        worksheet = workbook.add_worksheet()
         worksheet = workbook.add_worksheet()
         worksheet.right_to_left() # make it arabic oriented
         worksheet.set_zoom(70) # the zoom will be 70%
@@ -632,7 +645,7 @@ def export_ministery_report():
         """ 1st row for logo image, but I didn't load the image due to problem with pyinstaller --onefile """
         worksheet.merge_range("A1:Y1", "", genericCellFormat) 
         worksheet.set_row(0,210)
-        worksheet.insert_image('A1', 'images\ministry.png', {'x_scale': 1.451, 'y_scale': 1.451})
+        worksheet.insert_image('A1', 'images\ministry.png', {'x_scale': 1.48, 'y_scale': 1.5})
         """ 2nd row for department title """
         worksheet.merge_range("A2:Y2", "مديرية توزيع كهرباء مركز نينوى", logoCellFormat)
         worksheet.set_row(1,40)
@@ -737,7 +750,7 @@ def export_transformers_report():
     global userMessage
     """ if current date exceeded the expiry date, the program will show error message and stops working """
     if not validate_date():
-        userMessage.configure(text="هنالك خطأ في البرنامج, اتصل بالمصصم على الرقم 07701791983 ", fg="red")
+        userMessage.configure(text="حصل خطأ في البرنامج اتصل بالرقم 07701791983 الخاص بالمصمم", fg="red")
         return
     """
     First check whether the two excel files were uploaded and processed properly,
@@ -755,7 +768,6 @@ def export_transformers_report():
             return
         """ create excel file workbook, and a worksheet, and customize the worksheet """
         workbook = xlsxwriter.Workbook(filename + ".xlsx", {'nan_inf_to_errors': True}) #{'nan_inf_to_errors': True} is the option to allow wirte float('nan') into excel cells
-        worksheet = workbook.add_worksheet()
         worksheet = workbook.add_worksheet()
         worksheet.right_to_left() # make it arabic oriented
         titleFormat = workbook.add_format({'align': 'center', 'valign':'vcenter', 'border':True, 'pattern':1, 'bg_color':'#d3d3d3'})
