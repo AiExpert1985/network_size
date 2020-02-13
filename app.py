@@ -26,7 +26,7 @@ TRANS_NAMES = {
         }
 SOURCE_NAMES = {
         "NAME" : "اسم المغذي ورقمه",
-        "STATION_33" : "sub_name33",
+        "STATION_33" : "اسم المحطة33 للمصدر",
         "STATION_132" : "اسم المحطة132 التي تغذيها",
         "STATUS" : "الحالة",
 		"OPERATION": "حالة المغذي",
@@ -286,6 +286,10 @@ def import_sources():
     """ if current date exceeded the expiry date, the program will show error message and stops working """
     if not validate_date():
         userMessage.configure(text="حصل خطأ في البرنامج اتصل بالرقم 07701791983 الخاص بالمصمم", fg="red")
+        return
+    """ load file depends on feeders (11 KV) and sources (33 KV), so the feeders and sources files must be uploaded first"""
+    if not (feederFlag):
+        userMessage.configure(text=" قم بتحميل ملف مغذيات (11 كف) اولا ", fg="red")
         return
     """ Create constant variables instead of using the dictionary, make it cleaner and also easier to maintain in the future. """    
     NAME = SOURCE_NAMES["NAME"]
