@@ -28,7 +28,6 @@ SOURCE_NAMES = {
         "NAME" : "اسم المغذي ورقمه",
         "STATION_33" : "اسم المحطة33 للمصدر",
         "STATION_132" : "اسم المحطة132 التي تغذيها",
-        "STATUS" : "الحالة",
 		"OPERATION": "حالة المغذي",
 		"LENGTH" : "SHAPE.STLength()",
         "NUMBER" : "رقم المغذي",
@@ -295,7 +294,6 @@ def import_sources():
     NAME = SOURCE_NAMES["NAME"]
     STATION_33 = SOURCE_NAMES["STATION_33"]
     STATION_132 = SOURCE_NAMES["STATION_132"]
-    STATUS = SOURCE_NAMES["STATUS"]
     OPERATION = SOURCE_NAMES["OPERATION"]
     LENGTH = SOURCE_NAMES["LENGTH"]
     NUMBER = SOURCE_NAMES["NUMBER"]
@@ -320,7 +318,7 @@ def import_sources():
     """
     try:
         for index, row in sourceFrame.iterrows():
-            if row[STATUS] == "good" and row[OPERATION] == "بالعمل":
+            if row[OPERATION] == "بالعمل":
                 sourceName = str(row[NAME]).strip() # remove leading spaces from the source name
                 """ 
                 check if the source was previously read, 
