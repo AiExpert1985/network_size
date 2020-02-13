@@ -453,6 +453,7 @@ def export_sources_report():
     seperatorCellFormat = workbook.add_format({'bold': True, 'font_size':14, 'align': 'center', 'valign':'vcenter', 'border':True, 'pattern':1, 'bg_color':'red'})
     logoCellFormat = workbook.add_format({'bold': True, 'font_size':18, 'align': 'center', 'valign':'vcenter', 'border':True})
     genericCellFormat = workbook.add_format({'align': 'center', 'valign':'vcenter', 'border':True})
+    station11CellFormat = workbook.add_format({'align': 'center', 'valign':'vcenter', 'border':True, 'pattern':1, 'bg_color':'#fce6e2'})
     sumCellFormat = workbook.add_format({'bold': True, 'font_size':14, 'align': 'center', 'valign':'vcenter', 'border':True})
     """ set the width of columns """
     worksheet.set_column("A:A",20)
@@ -552,7 +553,7 @@ def export_sources_report():
         if "132" in name:
             worksheet.merge_range(startRowIndex,0,endRowIndex-1,3, name, genericCellFormat) # add the station in the first column, with height equal all feeder rows
         else:
-            worksheet.merge_range(startRowIndex,3,endRowIndex-1,3, name, genericCellFormat) # add the station in the first column, with height equal all feeder rows
+            worksheet.merge_range(startRowIndex,3,endRowIndex-1,3, name, station11CellFormat) # add the station in the first column, with height equal all feeder rows
         worksheet.merge_range(startRowIndex,4,endRowIndex-1,4, station.citySide, genericCellFormat) # add the city side in the first column, with height equal all feeder rows           
         worksheet.merge_range(endRowIndex,0,endRowIndex,28, "", seperatorCellFormat) # create an empty row, works as separation between stations
         endRowIndex += 1 # increase the row pointer to point to the next row after the empty one added.
@@ -834,7 +835,7 @@ def main():
     global loadMessageTrans
     """ constructing the GUI """
     window = tkinter.Tk()
-    window.title("GIS Reports V1.0")
+    window.title("GIS Reports V2.1")
     window.geometry("1000x800")
     """ GIS logo """
     logoFrame = Frame(window)
