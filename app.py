@@ -14,7 +14,7 @@ FEEDER_NAMES = {
         "STATION" : "اسم المحطة",
         "CITYSIDE" : "جانب المدينة",
         "TYPE" : "نوع المغذي",
-        "LENGTH" : "SHAPE_Length",
+        "LENGTH" : "SHAPE.STLength()",
         "STATUS" : "حالة المغذي",
         "NUMBER" : "رقم المغذي"
         }
@@ -436,7 +436,7 @@ def export_sources_report():
     filename = filedialog.asksaveasfilename(filetypes=(("Excel files", "*.xlsx"),("All files", "*.*") ))
     """if the user didn't specify a path, an error message will be displayed"""
     if filename is None or filename == "":
-        userMessage.configure(text="لم يتم تحديد مسار ملف تقرير المصادر", fg="red")
+        userMessage.configure(text="لم يتم تحديد مسار تقرير حجم الشبكة", fg="red")
         return
     """ create excel file workbook, and a worksheet, and customize the worksheet """
     workbook = xlsxwriter.Workbook(filename + ".xlsx", {'nan_inf_to_errors': True}) #{'nan_inf_to_errors': True} is the option to allow wirte float('nan') into excel cells
@@ -590,7 +590,7 @@ def export_sources_report():
     worksheet.write(endRowIndex, 28, grandTransSum, sumCellFormat) 
     worksheet.set_row(endRowIndex, 40) # set the height of row, I couldn't do at the beginning with other formats becuase it uses a variable the its value couldn't be known at the beginning
     workbook.close() # finally save the excel file
-    userMessage.configure(text=f"تم تصدير تقريرالمصادر ", fg="green") # user success message
+    userMessage.configure(text=f"تم تصدير تقرير حجم الشبكة  ", fg="green") # user success message
     # except:
     #     userMessage.configure(text="حدث خطأ اثناء تحميل تقرير المصادر", fg="red") # user message if any thing went wrong during executing the function
     return
@@ -620,7 +620,7 @@ def export_ministery_report():
         filename = filedialog.asksaveasfilename(filetypes=(("Excel files", "*.xlsx"),("All files", "*.*") ))
         """if the user didn't specify a path, an error message will be displayed"""
         if filename is None or filename=="":
-            userMessage.configure(text="لم يتم تحديد مسار ملف الوزارة", fg="red")
+            userMessage.configure(text="لم يتم تحديد مسار تقرير الوزارة ", fg="red")
             return
         """ create excel file workbook, and a worksheet, and customize the worksheet """
         workbook = xlsxwriter.Workbook(filename + ".xlsx", {'nan_inf_to_errors': True}) #{'nan_inf_to_errors': True} is the option to allow wirte float('nan') into excel cells
@@ -767,7 +767,7 @@ def export_transformers_report():
         filename = filedialog.asksaveasfilename(filetypes=(("Excel files", "*.xlsx"),("All files", "*.*") ))
         """if the user didn't specify a path, an error message will be displayed"""
         if filename is None or filename=="":
-            userMessage.configure(text="لم يتم تحديد مسار تصدير ملف المحولات", fg="red") 
+            userMessage.configure(text="لم يتم تحديد مسار تقرير المحولات", fg="red") 
             return
         """ create excel file workbook, and a worksheet, and customize the worksheet """
         workbook = xlsxwriter.Workbook(filename + ".xlsx", {'nan_inf_to_errors': True}) #{'nan_inf_to_errors': True} is the option to allow wirte float('nan') into excel cells
@@ -802,7 +802,7 @@ def export_transformers_report():
                     worksheet.write(rowIndex, 2, transText[:-2], cellFormat) # Remove last two char (" +") from the transformer text
                     rowIndex += 1
         workbook.close() # finally save the excel file
-        userMessage.configure(text=f"تم تصدير تقرير عدد المحولات ", fg="green") # user success message
+        userMessage.configure(text=f"تم تصدير تقرير المحولات ", fg="green") # user success message
     except:
         userMessage.configure(text="حدث خطأ اثناء تصدير تقرير المحولات", fg="red") # user message if any thing went wrong during executing the function
 
@@ -885,7 +885,7 @@ def main():
     saveImage = PhotoImage(file = r"images\save.png").subsample(5, 5) # create photo and resize it
     exportMinistry = Button(saveGroup, text="  تقرير الوزارة", image = saveImage, compound = 'left', command=export_ministery_report, cursor="hand2", font=("Helvetica", 14))
     exportTrans = Button(saveGroup, text="  تقرير المحولات", image = saveImage, compound = 'left', command=export_transformers_report, cursor="hand2", font=("Helvetica", 14))
-    export33Kv = Button(saveGroup, text="   تقرير المصادر  ", image = saveImage, compound = 'left', command=export_sources_report, cursor="hand2", font=("Helvetica", 14))
+    export33Kv = Button(saveGroup, text=" تقرير حجم الشبكة ", image = saveImage, compound = 'left', command=export_sources_report, cursor="hand2", font=("Helvetica", 14))
     exportTrans.pack(side=RIGHT, padx=10, pady=10, ipadx=15, ipady=7)
     exportMinistry.pack(side=RIGHT, padx=10, pady=10, ipadx=15, ipady=7)
     export33Kv.pack(side=RIGHT, padx=10, pady=10, ipadx=15, ipady=7)
